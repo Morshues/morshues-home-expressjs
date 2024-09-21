@@ -9,9 +9,13 @@ router.post('/api/auth', (req, res) => {
   const { username, password } = req.body;
 
   if (username && password) {
-    res.status(200).send(`Username: ${username}, Password: ${password}`);
+    res.status(200).send({
+      data: `Username: ${username}, Password: ${password}`,
+    })
   } else {
-    res.status(400).send('Username or password is missing');
+    res.status(400).send({
+      error: 'Username or password is missing'
+    });
   }
 });
 

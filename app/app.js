@@ -4,7 +4,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
-const indexRouter = require('./routes/index');
+const indexRouter = require('./routes');
 const familyPrivateRoutes = require('./routes/family_private');
 
 const app = express();
@@ -12,7 +12,7 @@ const app = express();
 // view engine setup
 app.engine('hbs', engine({extname: '.hbs'}));
 app.set('view engine', 'hbs');
-app.set('views', './views');
+app.set('views', path.join(__dirname, 'views'));
 
 app.use(logger('dev'));
 app.use(express.json());

@@ -1,0 +1,58 @@
+<style>
+    table {
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+    td, td {
+        border: 1px solid black;
+    }
+    .error {
+        color: red;
+    }
+    .message {
+        margin-top:5px;
+    }
+</style>
+
+<center><h1>汪仔縮網址</h1></center>
+<center>
+    <form action="/url/shorten" method="POST">
+        <label for="originalUrl">原網址：</label>
+        <input type="url" id="originalUrl" name="originalUrl" size="80" required>
+        <button type="submit">給我縮</button>
+    </form>
+	<br />
+    {{#if error}}
+        <span class="message error">{{error}}</span>
+    {{/if}}
+    {{#if lastUrl}}
+        <a href="{{lastUrl}}" class="message">{{lastUrl}}</a>
+    {{/if}}
+	<br />
+	<br />
+
+	<hr />
+	<H3>History</h3>
+	<div>
+		<table>
+			<thead>
+				<tr>
+					<td width=40>id</td>
+					<td width=100>shorter</td>
+					<td width=620>origin_url</td>
+					<td width=40></td>
+				</tr>
+			</thead>
+			<tbody>
+                {{#each history}}
+                    <tr>
+                        <td>{{id}}</td>
+                        <td>{{shortCode}}</td>
+                        <td>{{originalUrl}}</td>
+                        <td><a href="/url/{{shortCode}}">Go</a></td>
+                    </tr>
+                {{/each}}
+			</tbody>
+		</table>
+	</div>
+</center>

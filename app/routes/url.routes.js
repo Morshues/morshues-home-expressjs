@@ -2,10 +2,12 @@ const express = require('express')
 const router = express.Router()
 const urlController = require('../controllers/url.controller')
 
-router.get('/', urlController.showList)
+const subPath = 'url'
 
-router.post('/shorten', urlController.createShortUrl)
+router.get(`/${subPath}/`, urlController.showList)
 
-router.get('/:shortCode', urlController.redirectToOriginalUrl)
+router.post(`/${subPath}/shorten`, urlController.createShortUrl)
+
+router.get('/u/:shortCode', urlController.redirectToOriginalUrl)
 
 module.exports = router

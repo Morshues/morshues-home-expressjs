@@ -28,7 +28,7 @@ exports.createShortUrl = async (req, res) => {
     if (!urlExist) {
       url = await Url.create({ originalUrl })
     }
-    let shortUrl = `${req.protocol}://${req.headers.host}/url/${url.shortCode}`
+    let shortUrl = `${req.protocol}://${req.headers.host}/u/${url.shortCode}`
     req.flash(FLASH_LAST_URL, shortUrl)
     res.redirect('/url')
   } catch (error) {

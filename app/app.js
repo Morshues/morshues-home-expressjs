@@ -35,7 +35,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/family_private', familyPrivateRoutes);
-app.use('/url', shortenedRoutes);
+app.use('/', shortenedRoutes);
 
 // error handler
 app.use(function(err, req, res, next) {

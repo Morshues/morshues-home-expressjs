@@ -9,6 +9,7 @@ const logger = require('morgan');
 const indexRouter = require('./routes');
 const familyPrivateRoutes = require('./routes/family_private');
 const shortenedRoutes = require('./routes/url.routes');
+const tgRoutes = require('./routes/tg.routes');
 
 const app = express();
 
@@ -36,6 +37,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/family_private', familyPrivateRoutes);
 app.use('/', shortenedRoutes);
+
+if (process.env.ENV === 'local') {
+  // only open these functions on local
+  app.use('/tg', tgRoutes);
+}
 
 // error handler
 app.use(function(err, req, res, next) {

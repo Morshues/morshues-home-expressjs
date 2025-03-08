@@ -1,0 +1,20 @@
+<style>
+    body {
+        text-align: center;
+    }
+</style>
+
+<body>
+<h1>Telegram Index</h1>
+<br />
+<form action="/tg/connect" method="POST">
+    <label for="tgLink">Telegram Link：</label>
+    <input type="url" id="tgLink" name="tgLink" size="80" required>
+    <button type="submit">Submit</button>
+</form>
+<br />
+{{#if error}}
+    <span class="message error">{{error}}</span>
+{{/if}}
+<br />
+</body>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video List</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .video-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .video-item { text-align: center; }
+        img { width: 200px; height: 120px; object-fit: cover; display: block; margin: 0 auto; }
+        a { text-decoration: none; color: black; font-size: 16px; display: block; margin-top: 5px; }
+    </style>
+</head>
+<body>
+<h1>Video List</h1>
+<div class="video-list">
+    {{#each videos}}
+        <div class="video-item">
+            <a href="/video/v/{{this}}">
+                <img src="/video/thumbnails/{{this}}" alt="Thumbnail">
+                <span>{{this}}</span>
+            </a>
+        </div>
+    {{/each}}
+</div>
+</body>
+</html>

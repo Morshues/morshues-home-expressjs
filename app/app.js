@@ -10,6 +10,7 @@ const indexRouter = require('./routes');
 const familyPrivateRoutes = require('./routes/family_private');
 const shortenedRoutes = require('./routes/url.routes');
 const tgRoutes = require('./routes/tg.routes');
+const browseVideosRoutes = require("./routes/browse_videos.routes");
 
 const app = express();
 
@@ -41,6 +42,9 @@ app.use('/', shortenedRoutes);
 if (process.env.ENV === 'local') {
   // only open these functions on local
   app.use('/tg', tgRoutes);
+
+  app.use(express.static('../local_assets'));
+  app.use('/video/', browseVideosRoutes);
 }
 
 // error handler

@@ -131,3 +131,6 @@ dist
 
 # intellij
 .idea/
+
+# project local files
+local_assets

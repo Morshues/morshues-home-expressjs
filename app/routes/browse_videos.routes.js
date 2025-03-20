@@ -6,8 +6,8 @@ router.get('/', browseVideoController.getAllVideos);
 
 router.get('/list', browseVideoController.videoList);
 
-router.get('/thumbnails/:filename', browseVideoController.getThumbnail);
+router.get('/thumbnails/{*filename}', browseVideoController.getThumbnail);
 
-router.get('/v/:filename', browseVideoController.streamVideo);
+router.get('/v/{*filename}', browseVideoController.streamVideo);
 
 module.exports = router;

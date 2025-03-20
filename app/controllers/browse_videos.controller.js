@@ -5,36 +5,50 @@ const { exec } = require('child_process');
 const videoDir = path.join(__dirname, '../../local_assets/video');
 const thumbnailDir = path.join(__dirname, '../../local_assets/thumb')
 
-exports.getAllVideos = (req, res) => {
-  fs.readdir(videoDir, (err, files) => {
-    if (err) {
-      return res.status(500).send('Unable to read the video folder');
+function getVideoTree(subDir) {
+  const dir = path.join(videoDir, subDir)
+  const result = [];
+  const files = fs.readdirSync(dir);
+
+  files.forEach((file) => {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+
+    if (stat.isDirectory()) {
+      result.push({
+        name: file,
+        type: 'folder',
+        children: getVideoTree(path.join(subDir,file)),
+      });
+    } else if (/\.(mp4|avi|mov|mkv)$/.test(file)) {
+      result.push({
+        name: file,
+        type: 'video',
+        thumbnail: path.join('thumbnails',subDir,file),
+        path: path.join('v',subDir,file),
+      });
     }
-
-    const videoFiles = files.filter(file => /\.(mp4|avi|mov|mkv)$/.test(file));
-
-    res.render('browse_videos/index', { videos: videoFiles });
   });
+
+  return result;
+}
+
+exports.getAllVideos = (req, res) => {
+  res.render('browse_videos/index');
 };
 
 exports.videoList = (req, res) => {
-  fs.readdir(videoDir, (err, files) => {
-    if (err) {
-      return res.status(500).send('Unable to read the video folder');
-    }
-    const videoFiles = files.filter(file => /\.(mp4|avi|mov|mkv)$/.test(file));
-    const result = videoFiles.map(videoName => {
-      return {
-        id: videoName,
-        thumbnail: videoName,
-      }
-    })
-    res.json(result);
-  });
+  try {
+    const videoData = getVideoTree('')
+    res.json(videoData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Unable to read the video folder');
+  }
 };
 
 exports.streamVideo = (req, res) => {
-  const { filename } = req.params;
+  const filename = req.params.filename.join('/')
   const filePath = path.join(videoDir, filename);
 
   if (!fs.existsSync(filePath)) {
@@ -77,9 +91,10 @@ exports.streamVideo = (req, res) => {
 };
 
 exports.getThumbnail = async (req, res) => {
-  const { filename } = req.params;
+  const filename = req.params.filename.join('/')
   const videoPath = path.join(videoDir, filename);
-  const thumbnailPath = path.join(thumbnailDir, `${filename}.jpg`);
+  const thumbnailName = req.params.filename.join(':')
+  const thumbnailPath = path.join(thumbnailDir, `${thumbnailName}.jpg`);
 
   if (!fs.existsSync(videoPath)) {
     return res.status(404).send('video not exist');

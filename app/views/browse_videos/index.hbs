@@ -6,23 +6,63 @@
     <title>Video List</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
-        .video-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
-        .video-item { text-align: center; }
-        img { width: 200px; height: 120px; object-fit: cover; display: block; margin: 0 auto; }
-        a { text-decoration: none; color: black; font-size: 16px; display: block; margin-top: 5px; }
+        .video-list { list-style: none; padding: 0; }
+        .folder, .video-item { cursor: pointer; padding: 5px 10px; border-radius: 5px; display: flex; align-items: center; gap: 10px; }
+        .folder { font-weight: bold; color: #007bff; }
+        .folder::before { content: "📁"; }
+        .thumbnail { width: 120px; height: 70px; object-fit: cover; border-radius: 5px; }
+        .nested { display: none; margin-left: 20px; }
+        .expanded > .nested { display: block; border-left: 1px lightgray solid; }
     </style>
 </head>
 <body>
 <h1>Video List</h1>
-<div class="video-list">
-    {{#each videos}}
-        <div class="video-item">
-            <a href="/video/v/{{this}}">
-                <img src="/video/thumbnails/{{this}}" alt="Thumbnail">
-                <span>{{this}}</span>
-            </a>
-        </div>
-    {{/each}}
-</div>
+<ul id="video-container" class="video-list"></ul>
+
+<script>
+    async function fetchVideos() {
+        try {
+            const response = await fetch('/video/list');
+            const data = await response.json();
+            renderVideoList(data, document.getElementById('video-container'));
+        } catch (error) {
+            console.error('Error loading video list:', error);
+        }
+    }
+
+    function renderVideoList(items, container) {
+        items.forEach(item => {
+            const li = document.createElement('li');
+
+            if (item.type === 'folder') {
+                li.className = 'folder';
+                li.textContent = item.name;
+                const nestedUl = document.createElement('ul');
+                nestedUl.className = 'nested';
+                li.appendChild(nestedUl);
+
+                li.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    li.classList.toggle('expanded');
+                    if (!nestedUl.hasChildNodes()) {
+                        renderVideoList(item.children, nestedUl);
+                    }
+                });
+            } else if (item.type === 'video') {
+                li.className = 'video-item';
+                li.innerHTML = `
+                        <a href="${item.path}">
+                            <img class="thumbnail" src="${item.thumbnail}" alt="Thumbnail">
+                            ${item.name}
+                        </a>
+                    `;
+            }
+
+            container.appendChild(li);
+        });
+    }
+
+    fetchVideos();
+</script>
 </body>
 </html>

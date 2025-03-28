@@ -5,7 +5,7 @@ const { exec } = require('child_process');
 const videoDir = path.join(__dirname, '../../local_assets/video');
 const thumbnailDir = path.join(__dirname, '../../local_assets/thumb')
 
-function getVideoTree(subDir) {
+function getLibraryTree(subDir) {
   const dir = path.join(videoDir, subDir)
   const result = [];
   const files = fs.readdirSync(dir);
@@ -18,7 +18,7 @@ function getVideoTree(subDir) {
       result.push({
         name: file,
         type: 'folder',
-        children: getVideoTree(path.join(subDir,file)),
+        children: getLibraryTree(path.join(subDir,file)),
       });
     } else if (/\.(mp4|avi|mov|mkv)$/.test(file)) {
       result.push({
@@ -33,14 +33,14 @@ function getVideoTree(subDir) {
   return result;
 }
 
-exports.getAllVideos = (req, res) => {
-  res.render('browse_videos/index');
+exports.index = (req, res) => {
+  res.render('browse_library/index');
 };
 
-exports.videoList = (req, res) => {
+exports.itemList = (req, res) => {
   try {
-    const videoData = getVideoTree('')
-    res.json(videoData);
+    const data = getLibraryTree('')
+    res.json(data);
   } catch (err) {
     console.error(err);
     res.status(500).send('Unable to read the video folder');

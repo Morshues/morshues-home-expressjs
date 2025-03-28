@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video List</title>
+    <title>Library</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
-        .video-list { list-style: none; padding: 0; }
+        .item-list { list-style: none; padding: 0; }
         .folder, .video-item { cursor: pointer; padding: 5px 10px; border-radius: 5px; display: flex; align-items: center; gap: 10px; }
         .folder { font-weight: bold; color: #007bff; }
         .folder::before { content: "📁"; }
@@ -16,21 +16,21 @@
     </style>
 </head>
 <body>
-<h1>Video List</h1>
-<ul id="video-container" class="video-list"></ul>
+<h1>Library</h1>
+<ul id="library-container" class="item-list"></ul>
 
 <script>
-    async function fetchVideos() {
+    async function fetchLibrary() {
         try {
-            const response = await fetch('/video/list');
+            const response = await fetch('/library/list');
             const data = await response.json();
-            renderVideoList(data, document.getElementById('video-container'));
+            renderLibrary(data, document.getElementById('library-container'));
         } catch (error) {
-            console.error('Error loading video list:', error);
+            console.error('Error loading library:', error);
         }
     }
 
-    function renderVideoList(items, container) {
+    function renderLibrary(items, container) {
         items.forEach(item => {
             const li = document.createElement('li');
 
@@ -45,7 +45,7 @@
                     e.stopPropagation();
                     li.classList.toggle('expanded');
                     if (!nestedUl.hasChildNodes()) {
-                        renderVideoList(item.children, nestedUl);
+                        renderLibrary(item.children, nestedUl);
                     }
                 });
             } else if (item.type === 'video') {
@@ -62,7 +62,7 @@
         });
     }
 
-    fetchVideos();
+    fetchLibrary();
 </script>
 </body>
 </html>

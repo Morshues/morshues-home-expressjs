@@ -10,7 +10,7 @@ const indexRouter = require('./routes');
 const familyPrivateRoutes = require('./routes/family_private');
 const shortenedRoutes = require('./routes/url.routes');
 const tgRoutes = require('./routes/tg.routes');
-const browseVideosRoutes = require("./routes/browse_videos.routes");
+const browseLibraryRoutes = require("./routes/browse_library.routes");
 
 const app = express();
 
@@ -44,7 +44,7 @@ if (process.env.ENV === 'local') {
   app.use('/tg', tgRoutes);
 
   app.use(express.static('../local_assets'));
-  app.use('/video/', browseVideosRoutes);
+  app.use('/library/', browseLibraryRoutes);
 }
 
 // error handler

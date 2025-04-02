@@ -36,7 +36,7 @@ function buildVideoCache(document) {
   console.log('Video file_id:', document.id, 'video size (bytes):', fileSize);
   const videoFileLocation = getVideoLocation(document)
   const thumbFileLocation = getThumbnailLocation(document)
-  const filename = document.attributes.find(attr => attr instanceof Api.DocumentAttributeFilename)?.filename
+  const filename = document.attributes.find(attr => attr instanceof Api.DocumentAttributeFilename)?.fileName
   const duration = document.attributes.find(attr => attr instanceof Api.DocumentAttributeVideo)?.duration
   return {
     loc: videoFileLocation,

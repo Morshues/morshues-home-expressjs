@@ -19,8 +19,7 @@ function extractVideoDocument(message) {
   return isVideo ? document : null;
 }
 
-function buildFileLocation(document, type) {
-  const thumbSize = type === 'video' ? '' : document.thumbs?.[1]?.type
+function buildFileLocation(document, thumbSize) {
   return new Api.InputDocumentFileLocation({
     id: document.id,
     accessHash: document.accessHash,
@@ -29,11 +28,14 @@ function buildFileLocation(document, type) {
   })
 }
 
+function getVideoLocation(document) { return buildFileLocation(document, '') }
+function getThumbnailLocation(document) { return buildFileLocation(document, document.thumbs?.[1]?.type) }
+
 function buildVideoCache(document) {
   const fileSize = document.size;
   console.log('Video file_id:', document.id, 'video size (bytes):', fileSize);
-  const videoFileLocation = buildFileLocation(document, 'video')
-  const thumbFileLocation = buildFileLocation(document, 'thumb')
+  const videoFileLocation = getVideoLocation(document)
+  const thumbFileLocation = getThumbnailLocation(document)
   const filename = document.attributes.find(attr => attr instanceof Api.DocumentAttributeFilename)?.filename
   const duration = document.attributes.find(attr => attr instanceof Api.DocumentAttributeVideo)?.duration
   return {
@@ -75,7 +77,7 @@ async function getVideoCache(id, toView = false) {
   }
   if (toView) {
     history.updateLastViewed()
-      .then(/* No need to wait */)
+      .catch(console.error)
   }
   if (videoFileCache.has(id)) {
     return videoFileCache.get(id)

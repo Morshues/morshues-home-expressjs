@@ -2,6 +2,9 @@
     body {
         text-align: center;
     }
+    table {
+        justify-self: center;
+    }
 </style>
 
 <body>
@@ -17,4 +20,33 @@
     <span class="message error">{{error}}</span>
 {{/if}}
 <br />
+{{#if history.length}}
+    <h2>History</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>TG Url</th>
+            <th>Created At</th>
+            <th>Last Viewed At</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each history}}
+            <tr>
+                <td><a href="{{messageUrl}}" target="_blank">{{messageUrl}}</a></td>
+                <td>{{createdAt}}</td>
+                <td>{{lastViewedAt}}</td>
+                <td>
+                    <form action="/tg/connect" method="POST" style="display:inline;">
+                        <input type="hidden" name="tgLink" value="{{messageUrl}}" />
+                        <button type="submit">Link</button>
+                    </form>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+{{else}}
+    <p>No Tg Viewed History</p>
+{{/if}}
 </body>

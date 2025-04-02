@@ -1,59 +1,38 @@
-const { Api, TelegramClient } = require('telegram');
 const { RPCError } = require('telegram/errors');
-const { StringSession } = require('telegram/sessions');
-const fs = require('fs');
 const url = require('url');
+const dayjs = require('dayjs');
 
-const TG_API_ID = parseInt(process.env.TG_API_ID)
-const TG_API_HASH = process.env.TG_API_HASH
-const sessionString = fs.existsSync('session.txt') ? fs.readFileSync('session.txt', 'utf8') : '';
-const stringSession = new StringSession(sessionString);
-const client = new TelegramClient(stringSession, TG_API_ID, TG_API_HASH, {
-  connectionRetries: 5,
-});
-let codeResolver;
-
-const videoFileCache = new Map();
+const { client, startLogin, submitCode } = require('../services/tg_client')
+const tgService = require('../services/tg_service')
+const { TG_CHUNK_SIZE } = tgService
 
 const FLASH_CODE_INPUT_ERROR = 'codeInputError'
 const FLASH_TG_LINK_INPUT_ERROR = 'tgLinkInputError'
 
-async function init() {
-  await client.connect()
-}
-
-async function checkLogin() {
-  try {
-    const me = await client.getMe()
-    console.log('Logged In, User: ', me.username || me.phone)
-    return true
-  } catch (error) {
-    console.log('Client Not Logged In: ', error.message);
-    return false
-  }
-}
 
 exports.index = async (req, res) => {
-  if (!await checkLogin()) {
-    res.redirect('/tg/login')
-    return
-  }
-
-  res.render('tg/index')
+  const history = await tgService.listVideoHistory()
+  const toShowHistory = history.map(record => {
+    const plain = record.get({plain: true});
+    return {
+      ...plain,
+      createdAt: dayjs(plain.createdAt).format('YYYY-MM-DD HH:mm'),
+      lastViewedAt: dayjs(plain.lastViewedAt).format('YYYY-MM-DD HH:mm')
+    }
+  })
+  res.render('tg/index', {
+    history: toShowHistory,
+  })
 }
 
 exports.video = async (req, res) => {
-  if (!await checkLogin()) {
-    res.redirect('/tg/login')
-    return
-  }
-
-  const fileId = req.query?.fileId?.trim()
-  if (!fileId || !videoFileCache.has(fileId)) {
+  const idRaw = req.query?.id?.trim()
+  const id = parseInt(idRaw, 10)
+  const fileData = await tgService.getVideoCache(id, true)
+  if (!fileData) {
     return res.status(400).json({ error: 'file not exist' });
   }
 
-  const fileData = videoFileCache.get(fileId)
   const { loc: fileLocation, size: fileSize } = fileData
 
   const rangeHeader = req.headers.range;
@@ -77,8 +56,7 @@ exports.video = async (req, res) => {
     return;
   }
 
-  const tgChunkSize = 512 * 1024;
-  let startBatchSize = start % tgChunkSize
+  let startBatchSize = start % TG_CHUNK_SIZE
   const tgStart = start - startBatchSize
   end = Math.min(end, fileSize - 1);
 
@@ -99,42 +77,23 @@ exports.video = async (req, res) => {
     'Content-Type': 'video/mp4',
   });
 
-
   let ifNotClosed = true;
   req.on('close', () => {
     console.log('User stop the request, stop transferring.');
     ifNotClosed = false;
   });
 
-  /** @type {Api.upload.File} **/
-  let firstFileChunk = await client.invoke(
-    new Api.upload.GetFile({
-      location: fileLocation,
-      offset: tgStart,
-      limit: tgChunkSize,
-      precise: true,
-      cdnSupported: false,
-    })
-  );
+  let firstFileChunk = await tgService.getFileChunk(fileLocation, tgStart)
   let firstData = firstFileChunk.bytes.subarray(startBatchSize)
   res.write(firstData)
   console.log('offset', tgStart, 'len', firstFileChunk.bytes.length)
 
-  let offset = tgStart + tgChunkSize;
+  let offset = tgStart + TG_CHUNK_SIZE;
   while (ifNotClosed && offset <= end) {
     console.log('offset', offset, 'end', end)
 
     try {
-      /** @type {Api.upload.File} **/
-      let fileChunk = await client.invoke(
-        new Api.upload.GetFile({
-          location: fileLocation,
-          offset: offset,
-          limit: tgChunkSize,
-          precise: true,
-          cdnSupported: false,
-        })
-      );
+      let fileChunk = await tgService.getFileChunk(fileLocation, offset)
 
       if (!fileChunk.bytes || fileChunk.bytes.length === 0) {
         break; // Finished
@@ -146,8 +105,8 @@ exports.video = async (req, res) => {
     } catch (err) {
       console.error('Read File error:', err);
       if (err instanceof RPCError && err.errorMessage === 'FILE_REFERENCE_EXPIRED') {
-        videoFileCache.delete(fileId)
-        console.warn(`${fileId} expired`)
+        tgService.deleteVideoCache(id)
+        console.warn(`${id} expired`)
       }
       break;
     }
@@ -157,29 +116,34 @@ exports.video = async (req, res) => {
   console.log('Video streaming completed');
 }
 
-exports.login = async (req, res) => {
-  if (await checkLogin()) {
-    res.redirect('/tg/')
-    return
+exports.videoThumbnail = async (req, res) => {
+  const idRaw = req.query?.id?.trim()
+  const id = parseInt(idRaw, 10)
+  const fileData = await tgService.getVideoCache(id)
+  if (!fileData) {
+    return res.status(400).json({ error: 'file not exist' });
   }
+  const { tLoc: fileLocation, imgDcId: dcId } = fileData
+
+  const buffer = await client.downloadFile(fileLocation, {
+    dcId: dcId,
+  });
+
+  res.set('Content-Type', 'image/jpeg')
+  res.send(Buffer.from(buffer))
+}
+
+exports.login = async (req, res) => {
   try {
     res.render('tg/code_input', {
       error: req.flash(FLASH_CODE_INPUT_ERROR),
     })
-    await client.start({
-      phoneNumber: process.env.TG_PHONE,
-      password: process.env.TG_PASSWORD,
-      phoneCode: async () =>
-        new Promise((resolve) => {
-          codeResolver = resolve
-        }),
-      onError: (err) => {
-        req.flash(FLASH_CODE_INPUT_ERROR, err.message)
-        console.log(err)
-      },
-    })
-    fs.writeFileSync('session.txt', client.session.save());
-    codeResolver = null
+    await startLogin(null, (err) => {
+      req.flash(FLASH_CODE_INPUT_ERROR, err.message);
+      console.error('Telegram Login Error:', err.message);
+    });
+
+    res.redirect('/tg/');
   } catch (error) {
     console.error('Login to telegram error: ', error);
     res.status(500).json({ error: 'Login Failed' });
@@ -187,16 +151,12 @@ exports.login = async (req, res) => {
 }
 
 exports.code = async (req, res) => {
-  if (await checkLogin()) {
-    res.redirect('/tg/')
-    return
-  }
   const code = req.body?.code?.trim()
-  if (!code || !codeResolver) {
+  if (!code) {
     return res.status(400).json({ error: 'code missing' });
   }
-  await codeResolver(code)
-  res.redirect('/tg/')
+  await submitCode(code);
+  res.redirect('/tg/');
 }
 
 exports.connect = async (req, res) => {
@@ -205,42 +165,34 @@ exports.connect = async (req, res) => {
     return res.status(400).json({ error: 'tgLink missing' });
   }
 
-  const urlParts = tgLink.replace('https://t.me/', '').split('/');
-  const channelUsername = urlParts[0];
-  const messageId = parseInt(urlParts[1], 10);
+  const history = await tgService.getVideoHistoryByTgUrl(tgLink)
+  if (history) {
+    res.redirect(url.format({
+      pathname:'/tg/video',
+      query: {
+        'id': history.id,
+      }
+    }))
+    return
+  }
 
   try {
-    const channel = await client.getEntity(channelUsername);
-    const message = (await client.getMessages(channel, { ids: messageId }))[0];
+    const message = await tgService.getMessageFromLink(tgLink)
+    const document = tgService.extractVideoDocument(message)
 
-    if (!message.media?.document) {
+    if (!document) {
       console.log('No video')
       req.flash(FLASH_TG_LINK_INPUT_ERROR, 'No video')
       res.redirect('/tg/')
       return
     }
-    console.log('Found media, start downloading...');
 
-    const file = message.media.document;
-    const fileSize = file.size;
-    console.log('Video file_id:', file.id, 'video size (bytes):', fileSize);
-    const fileLocation = new Api.InputDocumentFileLocation({
-      id: file.id,
-      accessHash: file.accessHash,
-      fileReference: file.fileReference,
-      thumbSize: '',
-    });
-
-    const fileIdStr = file.id.value.toString()
-    videoFileCache.set(fileIdStr, {
-      loc: fileLocation,
-      size: fileSize,
-    });
+    const [ history, _] = await tgService.buildVideo(document, tgLink)
 
     res.redirect(url.format({
       pathname:'/tg/video',
       query: {
-        'fileId': fileIdStr,
+        'id': history.id,
       }
     }))
 
@@ -250,11 +202,7 @@ exports.connect = async (req, res) => {
 }
 
 exports.list = async (req, res) => {
-  const list = Array.from(videoFileCache.keys()).map(id => { return {'id': id} })
+  const list = tgService.listVideoCache()
   console.log('list: ', list.length)
   res.json(list)
 }
-
-
-init()
-  .then(/* Empty */)

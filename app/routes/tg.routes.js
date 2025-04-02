@@ -1,15 +1,18 @@
 const express = require('express')
 const router = express.Router()
 const tgController = require('../controllers/tg.controller')
+const { requireTelegramLogin, loggedInRedirect }  = require('../middlewares/tg_auth');
 
 
-router.get(`/`, tgController.index)
+router.get(`/`, requireTelegramLogin, tgController.index)
 
-router.get(`/video`, tgController.video)
+router.get(`/video`, requireTelegramLogin, tgController.video)
 
-router.get(`/login`, tgController.login)
+router.get(`/video_thumbs`, requireTelegramLogin, tgController.videoThumbnail)
 
-router.post(`/code`, tgController.code)
+router.get(`/login`, loggedInRedirect, tgController.login)
+
+router.post(`/code`, loggedInRedirect, tgController.code)
 
 router.post(`/connect`, tgController.connect)
 

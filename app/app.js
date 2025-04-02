@@ -2,6 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const { engine } = require('express-handlebars');
+const dayjs = require('dayjs');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
@@ -25,7 +26,14 @@ app.use(session({
 app.use(flash());
 
 // view engine setup
-app.engine('hbs', engine({extname: '.hbs'}));
+app.engine('hbs', engine({
+  extname: '.hbs',
+  helpers: {
+    formatDate: (date) => {
+      return dayjs(date).format('YYYY-MM-DD HH:mm');
+    }
+  }
+}));
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 

@@ -44,7 +44,7 @@ function buildVideoCache(document) {
     size: fileSize,
     filename: filename || '',
     duration: duration || 0,
-    imgDcId: document.dcId,
+    dcId: document.dcId,
   }
 }
 
@@ -104,8 +104,9 @@ async function getVideoHistoryByTgUrl(tgUrl) {
   })
 }
 
-async function getFileChunk(fileLocation, offset) {
-  return await client.invoke(
+async function getFileChunk(fileLocation, dcId, offset) {
+  const sender = await client.getSender(dcId);
+  return await sender.send(
     new Api.upload.GetFile({
       location: fileLocation,
       offset: offset,

@@ -33,7 +33,7 @@ exports.video = async (req, res) => {
     return res.status(400).json({ error: 'file not exist' });
   }
 
-  const { loc: fileLocation, size: fileSize } = fileData
+  const { loc: fileLocation, size: fileSize, dcId } = fileData
 
   const rangeHeader = req.headers.range;
   let start = 0;
@@ -83,7 +83,7 @@ exports.video = async (req, res) => {
     ifNotClosed = false;
   });
 
-  let firstFileChunk = await tgService.getFileChunk(fileLocation, tgStart)
+  let firstFileChunk = await tgService.getFileChunk(fileLocation, dcId, tgStart)
   let firstData = firstFileChunk.bytes.subarray(startBatchSize)
   res.write(firstData)
   console.log('offset', tgStart, 'len', firstFileChunk.bytes.length)
@@ -93,7 +93,7 @@ exports.video = async (req, res) => {
     console.log('offset', offset, 'end', end)
 
     try {
-      let fileChunk = await tgService.getFileChunk(fileLocation, offset)
+      let fileChunk = await tgService.getFileChunk(fileLocation, dcId, offset)
 
       if (!fileChunk.bytes || fileChunk.bytes.length === 0) {
         break; // Finished
@@ -123,7 +123,7 @@ exports.videoThumbnail = async (req, res) => {
   if (!fileData) {
     return res.status(400).json({ error: 'file not exist' });
   }
-  const { tLoc: fileLocation, imgDcId: dcId } = fileData
+  const { tLoc: fileLocation, dcId: dcId } = fileData
 
   const buffer = await client.downloadFile(fileLocation, {
     dcId: dcId,

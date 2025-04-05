@@ -104,11 +104,12 @@ async function getVideoHistoryByTgUrl(tgUrl) {
   })
 }
 
-async function getFileChunk(fileLocation, dcId, offset) {
+async function getFileChunk(historyId, offset) {
+  const { dcId, loc } = videoFileCache.get(historyId)
   const sender = await client.getSender(dcId);
   return await sender.send(
     new Api.upload.GetFile({
-      location: fileLocation,
+      location: loc,
       offset: offset,
       limit: TG_CHUNK_SIZE,
       precise: true,

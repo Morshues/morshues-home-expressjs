@@ -33,7 +33,7 @@ exports.video = async (req, res) => {
     return res.status(400).json({ error: 'file not exist' });
   }
 
-  const { loc: fileLocation, size: fileSize, dcId } = fileData
+  const { size: fileSize } = fileData
 
   const rangeHeader = req.headers.range;
   let start = 0;
@@ -83,17 +83,17 @@ exports.video = async (req, res) => {
     ifNotClosed = false;
   });
 
-  let firstFileChunk = await tgService.getFileChunk(fileLocation, dcId, tgStart)
-  let firstData = firstFileChunk.bytes.subarray(startBatchSize)
-  res.write(firstData)
-  console.log('offset', tgStart, 'len', firstFileChunk.bytes.length)
+  try {
+    let firstFileChunk = await tgService.getFileChunk(id, tgStart)
+    let firstData = firstFileChunk.bytes.subarray(startBatchSize)
+    res.write(firstData)
+    console.log('offset', tgStart, 'len', firstFileChunk.bytes.length)
 
-  let offset = tgStart + TG_CHUNK_SIZE;
-  while (ifNotClosed && offset <= end) {
-    console.log('offset', offset, 'end', end)
+    let offset = tgStart + TG_CHUNK_SIZE;
+    while (ifNotClosed && offset <= end) {
+      console.log('offset', offset, 'end', end)
 
-    try {
-      let fileChunk = await tgService.getFileChunk(fileLocation, dcId, offset)
+      let fileChunk = await tgService.getFileChunk(id, offset)
 
       if (!fileChunk.bytes || fileChunk.bytes.length === 0) {
         break; // Finished
@@ -102,13 +102,12 @@ exports.video = async (req, res) => {
       res.write(fileChunk.bytes);
       console.log('offset', offset, 'len', fileChunk.bytes.length)
       offset += fileChunk.bytes.length;
-    } catch (err) {
-      console.error('Read File error:', err);
-      if (err instanceof RPCError && err.errorMessage === 'FILE_REFERENCE_EXPIRED') {
-        tgService.deleteVideoCache(id)
-        console.warn(`${id} expired`)
-      }
-      break;
+    }
+  } catch (err) {
+    console.error('Read File error:', err);
+    if (err instanceof RPCError && err.errorMessage === 'FILE_REFERENCE_EXPIRED') {
+      tgService.deleteVideoCache(id)
+      console.warn(`${id} expired`)
     }
   }
 

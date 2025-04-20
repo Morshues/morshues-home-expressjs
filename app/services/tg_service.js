@@ -54,18 +54,14 @@ async function buildVideo(document, messageUrl) {
   })
 
   const cache = buildVideoCache(document)
+
+  // Update filename and duration
+  history.filename = cache.filename;
+  history.duration = cache.duration;
+  await history.save();
+
   videoFileCache.set(history.id, cache)
   return [history, cache]
-}
-
-function listVideoCache() {
-  return Array.from(videoFileCache.entries()).map(([id, item]) => {
-    return {
-      'id': id,
-      'filename': item.filename,
-      'duration': item.duration,
-    }
-  })
 }
 
 async function getVideoCache(id, toView = false) {
@@ -125,7 +121,6 @@ module.exports = {
   extractVideoDocument,
 
   buildVideo,
-  listVideoCache,
   getVideoCache,
   deleteVideoCache,
 

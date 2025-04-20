@@ -202,7 +202,6 @@ exports.connect = async (req, res) => {
 }
 
 exports.list = async (req, res) => {
-  const list = tgService.listVideoCache()
-  console.log('list: ', list.length)
+  const list = await tgService.listVideoHistory()
   res.json(list)
 }

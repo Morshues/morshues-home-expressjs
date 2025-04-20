@@ -14,9 +14,10 @@ router.get(`/login`, loggedInRedirect, tgController.login)
 
 router.post(`/code`, loggedInRedirect, tgController.code)
 
-router.post(`/connect`, tgController.connect)
+router.post(`/connect`, requireTelegramLogin, tgController.connect)
 
-router.post(`/list`, tgController.list)
+router.post(`/list`, requireTelegramLogin, tgController.list)
 
+router.post(`/delete`, requireTelegramLogin, tgController.delete)
 
 module.exports = router

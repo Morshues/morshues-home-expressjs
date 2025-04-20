@@ -26,6 +26,7 @@
         <thead>
         <tr>
             <th>TG Url</th>
+            <th>TG Filename</th>
             <th>Created At</th>
             <th>Last Viewed At</th>
         </tr>
@@ -34,12 +35,19 @@
         {{#each history}}
             <tr>
                 <td><a href="{{messageUrl}}" target="_blank">{{messageUrl}}</a></td>
+                <td>{{filename}}</td>
                 <td>{{createdAt}}</td>
                 <td>{{lastViewedAt}}</td>
                 <td>
                     <form action="/tg/connect" method="POST" style="display:inline;">
                         <input type="hidden" name="tgLink" value="{{messageUrl}}" />
                         <button type="submit">Link</button>
+                    </form>
+                </td>
+                <td>
+                    <form action="/tg/delete" method="POST" style="display:inline;">
+                        <input type="hidden" name="id" value="{{id}}" />
+                        <button type="submit">Delete</button>
                     </form>
                 </td>
             </tr>

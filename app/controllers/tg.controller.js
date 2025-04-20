@@ -205,3 +205,9 @@ exports.list = async (req, res) => {
   const list = await tgService.listVideoHistory()
   res.json(list)
 }
+
+exports.delete = async (req, res) => {
+  const id = req.body?.id?.trim()
+  await tgService.removeRecord(id)
+  res.redirect('/tg/');
+}

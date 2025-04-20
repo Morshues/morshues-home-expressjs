@@ -114,6 +114,13 @@ async function getFileChunk(historyId, offset) {
   )
 }
 
+async function removeRecord(historyId) {
+  videoFileCache.delete(historyId)
+  await TgViewedHistory.destroy({
+    where: {id: historyId}
+  })
+}
+
 module.exports = {
   TG_CHUNK_SIZE,
 
@@ -128,4 +135,6 @@ module.exports = {
   getVideoHistoryByTgUrl,
 
   getFileChunk,
+
+  removeRecord,
 }

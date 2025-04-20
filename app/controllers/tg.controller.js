@@ -104,10 +104,11 @@ exports.video = async (req, res) => {
       offset += fileChunk.bytes.length;
     }
   } catch (err) {
-    console.error('Read File error:', err);
     if (err instanceof RPCError && err.errorMessage === 'FILE_REFERENCE_EXPIRED') {
       tgService.deleteVideoCache(id)
       console.warn(`${id} expired`)
+    } else {
+      console.error('Read File error:', err);
     }
   }
 

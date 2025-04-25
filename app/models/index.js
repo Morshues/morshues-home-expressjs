@@ -22,5 +22,6 @@ db.sequelize = sequelize
 
 db.Url = require('./url.model.js')(sequelize, Sequelize)
 db.TgViewedHistory = require('./tg.model.js')(sequelize, Sequelize)
+db.LinkPage = require('./link_page.model')(sequelize, Sequelize)
 
 module.exports = db

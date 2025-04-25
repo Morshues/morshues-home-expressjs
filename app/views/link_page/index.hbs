@@ -1,0 +1,23 @@
+<h2>Links</h2>
+
+<ul>
+    {{#each links}}
+        <li>
+            <a href="{{url}}" target="_blank">{{this.title}} - {{this.url}}</a>
+            <form action="/link-page/delete" method="POST" style="display:inline;">
+                <input type="hidden" name="id" value="{{id}}" />
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+    {{/each}}
+</ul>
+
+<form method="POST" action="/link-page/create">
+    <label for="title">
+        <input type="text" name="title" placeholder="Title" />
+    </label>
+    <label for="url">
+        <input type="url" name="url" size="150" placeholder="Enter the url" required />
+    </label>
+    <button type="submit">Add</button>
+</form>

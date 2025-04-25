@@ -53,6 +53,8 @@ if (process.env.ENV === 'local') {
 
   app.use(express.static('../local_assets'));
   app.use('/library/', browseLibraryRoutes);
+
+  app.use('/link-page/', require('./routes/link_page.routes'));
 }
 
 // error handler

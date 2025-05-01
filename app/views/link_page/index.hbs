@@ -21,3 +21,24 @@
     </label>
     <button type="submit">Add</button>
 </form>
+
+<button id="pasteBtn">Add from clipboard</button>
+<script>
+    document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            fetch('/link-page/create', {
+                headers: {
+                    "content-type": "application/x-www-form-urlencoded",
+                },
+                method: "POST",
+                body: `title=&url=${text}`,
+            }).then(() => {
+                window.location.reload()
+            })
+        } catch (err) {
+            alert('Not able to read clipboard, please check the browser permission');
+            console.error(err);
+        }
+    });
+</script>

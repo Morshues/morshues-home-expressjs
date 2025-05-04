@@ -21,7 +21,7 @@ exports.showList = async (req, res) => {
 
 exports.createShortUrl = async (req, res) => {
   try {
-    const originalUrl = req.body.originalUrl?.trim()
+    const originalUrl = decodeURIComponent(req.body.originalUrl?.trim())
 
     let url = await Url.findOne({ where: { originalUrl } })
     let urlExist = url != null

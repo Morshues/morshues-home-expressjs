@@ -14,8 +14,9 @@ exports.index = async (req, res) => {
 exports.create = async (req, res) => {
   const { url, title } = req.body
   if (!url) return res.status(400).send('Missing URL')
+  const decodedUrl = decodeURIComponent(url);
   try {
-    await LinkPage.create({ url, title })
+    await LinkPage.create({ url: decodedUrl, title })
     res.redirect('/link-page/')
   } catch (err) {
     res.status(500).send(err.message)

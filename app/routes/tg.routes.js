@@ -20,6 +20,6 @@ router.post(`/list`, requireTelegramLogin, tgController.list)
 
 router.post('/:id/edit', requireTelegramLogin, tgController.edit)
 
-router.post(`/delete`, requireTelegramLogin, tgController.delete)
+router.post(`/:id/delete`, requireTelegramLogin, tgController.delete)
 
 module.exports = router

@@ -10,6 +10,6 @@ router.post('/create', controller.create)
 
 router.post('/:id/edit', controller.edit)
 
-router.post('/delete', controller.delete)
+router.post('/:id/delete', controller.delete)
 
 module.exports = router

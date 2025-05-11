@@ -51,7 +51,7 @@ exports.edit = async (req, res) => {
 }
 
 exports.delete = async (req, res) => {
-  const id = req.body?.id?.trim()
+  const id = req.params.id
   await LinkPage.destroy({
     where: {id}
   })

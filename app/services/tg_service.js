@@ -88,8 +88,13 @@ function deleteVideoCache(id) {
   videoFileCache.delete(id)
 }
 
-async function listVideoHistory() {
+async function listVideoHistory(nsfw = false) {
+  const where = {};
+  if (nsfw === true) {
+    where.nsfw = false;
+  }
   return await TgViewedHistory.findAll({
+    where,
     order: [['lastViewedAt', 'DESC']]
   })
 }

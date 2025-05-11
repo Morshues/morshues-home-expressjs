@@ -202,7 +202,8 @@ exports.connect = async (req, res) => {
 }
 
 exports.list = async (req, res) => {
-  const list = await tgService.listVideoHistory()
+  const nsfw = req.body?.nsfw
+  const list = await tgService.listVideoHistory(nsfw)
   res.json(list)
 }
 

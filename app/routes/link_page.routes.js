@@ -4,7 +4,7 @@ const controller = require('../controllers/link_page.controller')
 
 router.get('/', controller.index)
 
-router.get('/list', controller.list)
+router.post('/list', controller.list)
 
 router.post('/create', controller.create)
 

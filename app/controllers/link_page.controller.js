@@ -24,7 +24,13 @@ exports.create = async (req, res) => {
 }
 
 exports.list = async (req, res) => {
+  const nsfw = req.body?.nsfw
+  const where = {};
+  if (nsfw === true) {
+    where.nsfw = false;
+  }
   const list = await LinkPage.findAll({
+    where,
     order: [['lastViewedAt', 'DESC']]
   })
   res.json(list)

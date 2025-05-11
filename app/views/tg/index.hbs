@@ -1,12 +1,36 @@
-<style>
-    body {
-        text-align: center;
-    }
-    table {
-        justify-self: center;
-    }
-</style>
+<head>
+    <title>Telegram Index</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        table {
+            justify-self: center;
+        }
+    </style>
+    <script>
+        async function toggleNsfw(id, currentValue) {
+            const formData = new URLSearchParams();
+            formData.append('nsfw', !currentValue);
 
+            try {
+                const res = await fetch(`/tg/${id}/edit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</head>
 <body>
 <h1>Telegram Index</h1>
 <br />
@@ -29,6 +53,9 @@
             <th>TG Filename</th>
             <th>Created At</th>
             <th>Last Viewed At</th>
+            <th>Submit</th>
+            <th>NSFW</th>
+            <th>Delete</th>
         </tr>
         </thead>
         <tbody>
@@ -43,6 +70,11 @@
                         <input type="hidden" name="tgLink" value="{{messageUrl}}" />
                         <button type="submit">Link</button>
                     </form>
+                </td>
+                <td>
+                    <button type="submit" onclick="toggleNsfw({{id}}, {{nsfw}})">
+                        {{#if nsfw}}Enabled{{else}}Disabled{{/if}}
+                    </button>
                 </td>
                 <td>
                     <form action="/tg/delete" method="POST" style="display:inline;">

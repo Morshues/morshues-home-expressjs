@@ -114,6 +114,21 @@ async function getFileChunk(historyId, offset) {
   )
 }
 
+async function updateHistory(historyId, updates = {}) {
+  const record = await TgViewedHistory.findByPk(historyId)
+  if (!record) throw new Error('Record not found')
+
+  if ('nsfw' in updates) {
+    record.nsfw = updates.nsfw === true || updates.nsfw === 'true'
+  }
+  if ('title' in updates) {
+    record.title = updates.title
+  }
+
+  await record.save()
+  return record
+}
+
 async function removeRecord(historyId) {
   videoFileCache.delete(historyId)
   await TgViewedHistory.destroy({
@@ -136,5 +151,6 @@ module.exports = {
 
   getFileChunk,
 
+  updateHistory,
   removeRecord,
 }

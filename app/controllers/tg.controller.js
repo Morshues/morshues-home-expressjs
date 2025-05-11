@@ -206,6 +206,16 @@ exports.list = async (req, res) => {
   res.json(list)
 }
 
+exports.edit = async (req, res) => {
+  const id = req.params.id
+  try {
+    const history = await tgService.updateHistory(id, req.body)
+    res.send(history)
+  } catch (err) {
+    res.status(404).send(err.message)
+  }
+}
+
 exports.delete = async (req, res) => {
   const id = req.body?.id?.trim()
   await tgService.removeRecord(id)

@@ -30,6 +30,26 @@ exports.list = async (req, res) => {
   res.json(list)
 }
 
+exports.edit = async (req, res) => {
+  const id = req.params.id
+  const { title, nsfw } = req.body
+
+  const record = await LinkPage.findByPk(id)
+  if (!record) {
+    return res.status(404).send('Not found')
+  }
+
+  if (title !== undefined) {
+    record.title = title
+  }
+  if (nsfw !== undefined) {
+    record.nsfw = nsfw === 'true' || nsfw === true
+  }
+
+  await record.save()
+  res.send(record)
+}
+
 exports.delete = async (req, res) => {
   const id = req.body?.id?.trim()
   await LinkPage.destroy({

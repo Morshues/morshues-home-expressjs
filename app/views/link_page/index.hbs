@@ -1,16 +1,80 @@
+<head>
+    <title>Links</title>
+    <script>
+        document.getElementById('pasteBtn').addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                fetch('/link-page/create', {
+                    headers: {
+                        "content-type": "application/x-www-form-urlencoded",
+                    },
+                    method: "POST",
+                    body: `title=&url=${text}`,
+                }).then(() => {
+                    window.location.reload()
+                })
+            } catch (err) {
+                alert('Not able to read clipboard, please check the browser permission');
+                console.error(err);
+            }
+        });
+
+        async function toggleNsfw(id, currentValue) {
+            const formData = new URLSearchParams();
+            formData.append('nsfw', !currentValue);
+
+            try {
+                const res = await fetch(`/link-page/${id}/edit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</head>
+<body>
 <h2>Links</h2>
 
-<ul>
+<table>
+    <thead>
+    <tr>
+        <th>Title</th>
+        <th>Link</th>
+        <th>NSFW</th>
+        <th>Delete</th>
+    </tr>
+    </thead>
+    <tbody>
     {{#each links}}
-        <li>
-            <a href="{{url}}" target="_blank">{{this.title}} - {{this.url}}</a>
-            <form action="/link-page/delete" method="POST" style="display:inline;">
-                <input type="hidden" name="id" value="{{id}}" />
-                <button type="submit">Delete</button>
-            </form>
-        </li>
+        <tr>
+            <td>{{this.title}}</td>
+            <td>
+                <a href="{{url}}" target="_blank">{{this.url}}</a>
+            </td>
+            <td>
+                <button type="submit" onclick="toggleNsfw({{id}}, {{nsfw}})">
+                    {{#if nsfw}}Enabled{{else}}Disabled{{/if}}
+                </button>
+            </td>
+            <td>
+                <form action="/link-page/delete" method="POST" style="display:inline;">
+                    <input type="hidden" name="id" value="{{id}}" />
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
     {{/each}}
-</ul>
+    </tbody>
+</table>
 
 <form method="POST" action="/link-page/create">
     <label for="title">
@@ -23,22 +87,4 @@
 </form>
 
 <button id="pasteBtn">Add from clipboard</button>
-<script>
-    document.getElementById('pasteBtn').addEventListener('click', async () => {
-        try {
-            const text = await navigator.clipboard.readText();
-            fetch('/link-page/create', {
-                headers: {
-                    "content-type": "application/x-www-form-urlencoded",
-                },
-                method: "POST",
-                body: `title=&url=${text}`,
-            }).then(() => {
-                window.location.reload()
-            })
-        } catch (err) {
-            alert('Not able to read clipboard, please check the browser permission');
-            console.error(err);
-        }
-    });
-</script>
+</body>

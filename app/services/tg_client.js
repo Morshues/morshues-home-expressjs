@@ -39,10 +39,23 @@ function submitCode(code) {
 
 async function checkLogin() {
   try {
-    await client.getMe()
-    return true
-  } catch (_) {
-    return false
+    // Prevent timeout while checking login status by client.getMe
+    await Promise.race([
+      client.getMe(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+    ]);
+    return true;
+  } catch (err) {
+    console.warn('[Telegram] getMe failed，reconnecting...', err.message);
+
+    try {
+      await client._reconnect();
+      await client.getMe();
+      return true;
+    } catch (reErr) {
+      console.error('[Telegram] reconnect failed', reErr.message);
+      return false;
+    }
   }
 }
 

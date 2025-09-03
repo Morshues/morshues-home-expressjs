@@ -1,0 +1,14 @@
+<p>Hello, <strong>{{user.name}}</strong>!</p>
+
+<ul>
+    <li>Email: {{user.email}}</li>
+    <li>Provider: {{user.provider}}</li>
+    <li>Last login: {{user.lastLogin}}</li>
+</ul>
+
+{{#if isAdmin}}
+    <div style="padding: 1em; background: #ffcccc; border: 1px solid #ff9999;">
+        <strong>Admin panel:</strong> <br />
+        <a href="/auth/register">Register new user</a>
+    </div>
+{{/if}}

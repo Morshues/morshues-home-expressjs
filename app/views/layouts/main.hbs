@@ -3,10 +3,17 @@
 <head>
     <meta charset="utf-8">
     <title>Morshues Home</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
 </head>
 <body>
 
-    {{{body}}}
+    {{#if showUserStatus}}
+        {{> user_status}}
+    {{/if}}
+
+    <div class="main">
+        {{{body}}}
+    </div>
 
 </body>
 </html>

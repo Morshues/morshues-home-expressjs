@@ -20,8 +20,16 @@ const db = {}
 db.Sequelize = Sequelize
 db.sequelize = sequelize
 
+db.User = require('./user.model')(sequelize, Sequelize)
+db.Admin = require('./admin.model')(sequelize, Sequelize)
 db.Url = require('./url.model.js')(sequelize, Sequelize)
 db.TgViewedHistory = require('./tg.model.js')(sequelize, Sequelize)
 db.LinkPage = require('./link_page.model')(sequelize, Sequelize)
+
+Object.keys(db).forEach(modelName => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db)
+  }
+})
 
 module.exports = db

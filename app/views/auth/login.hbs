@@ -1,0 +1,50 @@
+<head>
+    <title>User Login</title>
+    <style>
+        .message.error {
+            color: firebrick;
+        }
+    </style>
+    {{#if user}}
+        <script>
+            let seconds = 5;
+            const interval = setInterval(() => {
+                document.getElementById('redirect-msg').textContent = `Redirecting in ${seconds--}...`;
+                if (seconds < 0) {
+                    clearInterval(interval);
+                    window.location.href = "/user";
+                }
+            }, 1000);
+        </script>
+    {{/if}}
+</head>
+<body>
+
+{{#if user}}
+    <h2>Already Logged In</h2>
+    <p id="redirect-msg">Redirecting in 5...</p>
+    <p><a href="/user">Or Click here to the user page</a></p>
+{{else}}
+
+    <h2>User Login</h2>
+
+    <form method="POST" action="/auth/login">
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" name="email" required />
+        </div>
+
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" name="password" required />
+        </div>
+
+        <button type="submit">Login</button>
+    </form>
+
+    {{#if error}}
+        <span class="message error">{{error}}</span>
+    {{/if}}
+
+{{/if}}
+</body>

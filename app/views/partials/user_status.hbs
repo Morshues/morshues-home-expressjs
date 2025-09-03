@@ -1,0 +1,15 @@
+<div class="user-bar">
+    {{#if user}}
+        <div class="user-content">
+            👤 {{user.name}}
+            {{#if isAdmin}}
+                (Admin)
+            {{/if}}
+            <a href="/auth/logout">Logout</a>
+        </div>
+    {{else}}
+        <div class="user-content">
+            <a href="/auth/login">Login</a>
+        </div>
+    {{/if}}
+</div>

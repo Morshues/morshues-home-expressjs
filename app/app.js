@@ -11,6 +11,9 @@ const indexRouter = require('./routes');
 const familyPrivateRoutes = require('./routes/family_private');
 const shortenedRoutes = require('./routes/url.routes');
 
+const passport = require('passport');
+require('./config/passport')(passport);
+
 const app = express();
 
 require('dotenv').config();
@@ -18,14 +21,22 @@ require('dotenv').config();
 app.use(session({
   secret: process.env.SESSION_SECRET_KEY,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: { secure: false }
 }));
 app.use(flash());
 
+// For all the views to read the flash from FLASH_ERROR
+const FLASH_ERROR = 'error'
+app.use((req, res, next) => {
+  res.locals.error = req?.flash(FLASH_ERROR);
+  next();
+});
+
 // view engine setup
 app.engine('hbs', engine({
   extname: '.hbs',
+  partialsDir: path.join(__dirname, 'views', 'partials'),
   helpers: {
     formatDate: (date) => {
       return dayjs(date).format('YYYY-MM-DD HH:mm');
@@ -40,6 +51,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(passport.initialize());
+app.use(passport.session({}));
+app.use((req, res, next) => {
+  if (req?.user) {
+    const user = req.user.toJSON ? req.user.toJSON() : req.user;
+    if (user.lastLogin) {
+      user.lastLogin = dayjs(user.lastLogin).format('YYYY-MM-DD HH:mm');
+    }
+    res.locals.user = user;
+    res.locals.isAdmin = user.adminInfo != null;
+  } else {
+    res.locals.user = null;
+    res.locals.isAdmin = false;
+  }
+  next();
+});
+app.use('/', require('./routes/auth.routes'));
 
 app.use('/', indexRouter);
 app.use('/family_private', familyPrivateRoutes);

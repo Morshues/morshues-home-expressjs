@@ -22,6 +22,7 @@ db.sequelize = sequelize
 
 db.User = require('./user.model')(sequelize, Sequelize)
 db.Admin = require('./admin.model')(sequelize, Sequelize)
+db.RefreshToken = require('./refresh_token.model')(sequelize, Sequelize)
 db.Url = require('./url.model.js')(sequelize, Sequelize)
 db.TgViewedHistory = require('./tg.model.js')(sequelize, Sequelize)
 db.LinkPage = require('./link_page.model')(sequelize, Sequelize)

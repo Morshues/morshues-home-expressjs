@@ -69,6 +69,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/', require('./routes/auth.routes'));
+app.use('/api/auth', require('./routes/auth.api.routes'));
 
 app.use('/', indexRouter);
 app.use('/family_private', familyPrivateRoutes);

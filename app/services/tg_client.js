@@ -49,8 +49,11 @@ async function checkLogin() {
     console.warn('[Telegram] getMe failed，reconnecting...', err.message);
 
     try {
-      await client._reconnect();
-      await client.getMe();
+      await client.connect();
+      await Promise.race([
+        client.getMe(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+      ]);
       return true;
     } catch (reErr) {
       console.error('[Telegram] reconnect failed', reErr.message);

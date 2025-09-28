@@ -85,6 +85,8 @@ if (process.env.ENV === 'local') {
   app.use('/link-page/', require('./routes/link_page.routes'));
 
   app.use('/upload/', require('./routes/upload.routes'));
+
+  app.use('/api/file-sync', require('./routes/file_sync.routes'));
 }
 
 // error handler

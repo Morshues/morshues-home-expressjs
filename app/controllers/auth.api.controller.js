@@ -115,7 +115,7 @@ exports.logoutJson = async (req, res) => {
 }
 
 exports.listMyDevices = async (req, res) => {
-  const userId = Number(req.jwt.sub)
+  const { userId } = req
   const rows = await RefreshToken.findAll({
     where: { user_id: userId },
     order: [['created_at','DESC']],

@@ -35,7 +35,13 @@ exports.uploadFile = async (req, res, next) => {
       return res.status(400).json({ ok: false, msg: 'file is required' })
     }
 
-    const entry = await service.entryForFile({ userId, folderId, fileName: req.file.filename })
+    const lastModified = Number(req.body.lastModified) / 1000
+    const entry = await service.entryForFile({
+      userId,
+      folderId,
+      fileName: req.file.filename,
+      lastModified: lastModified,
+    })
     res.status(201).json({ ok: true, entry })
   } catch (err) {
     if (err.code === 'ENOENT') {

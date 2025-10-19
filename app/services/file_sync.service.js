@@ -9,7 +9,7 @@ async function checksum(filePath) {
   const hash = crypto.createHash('md5')
   const stream = fsNative.createReadStream(filePath)
   return new Promise((resolve, reject) => {
-    stream.on('data', d => hash.update(d))
+    stream.on('data', (d) => hash.update(d))
     stream.on('end', () => resolve(hash.digest('hex')))
     stream.on('error', reject)
   })
@@ -19,10 +19,15 @@ function buildDirectory(userId, folderId) {
   return path.join(root, userId.toString(), folderId)
 }
 
-async function buildEntry(dir, name) {
+async function buildEntry(dir, name, lastModified = 0) {
   const filePath = path.join(dir, name)
   const stats = await fs.stat(filePath)
+
   if (!stats.isFile()) return null
+
+  if (lastModified !== 0) {
+    await fs.utimes(filePath, lastModified, lastModified)
+  }
   return {
     name,
     size: stats.size,
@@ -93,9 +98,9 @@ exports.normalizeFileName = (name) => {
   return sanitized.length ? sanitized : null
 }
 
-exports.entryForFile = async ({ userId, folderId, fileName }) => {
+exports.entryForFile = async ({ userId, folderId, fileName, lastModified }) => {
   const dir = buildDirectory(userId, folderId)
-  const entry = await buildEntry(dir, fileName)
+  const entry = await buildEntry(dir, fileName, lastModified)
   if (!entry) return null
   return entry
 }

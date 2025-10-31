@@ -4,6 +4,7 @@ const path = require('path')
 const crypto = require('crypto')
 
 const root = path.resolve(__dirname, '../../file_sync')
+const HIDE_FILE_REGEX = /^\./
 
 async function checksum(filePath) {
   const hash = crypto.createHash('md5')
@@ -19,7 +20,16 @@ function buildDirectory(userId, folderId) {
   return path.join(root, userId.toString(), folderId)
 }
 
+function shouldIgnoreFileName(name) {
+  return HIDE_FILE_REGEX.has(name)
+}
+
+function isAcceptedFileName(name) {
+  return typeof name === 'string' && !shouldIgnoreFileName(name)
+}
+
 async function buildEntry(dir, name, lastModified = 0) {
+  if (shouldIgnoreFileName(name)) return null
   const filePath = path.join(dir, name)
   const stats = await fs.stat(filePath)
 
@@ -42,7 +52,11 @@ async function listServerFiles(userId, folderId) {
   try {
     await fs.mkdir(dir, { recursive: true })
     const names = await fs.readdir(dir)
-    entries = await Promise.all(names.map(name => buildEntry(dir, name)))
+    entries = await Promise.all(
+      names
+        .filter((name) => !shouldIgnoreFileName(name))
+        .map((name) => buildEntry(dir, name))
+    )
   } catch (err) {
     if (err.code !== 'ENOENT') throw err
   }
@@ -51,8 +65,11 @@ async function listServerFiles(userId, folderId) {
 
 exports.diff = async ({ userId, folderId, clientEntries }) => {
   const serverEntries = await listServerFiles(userId, folderId)
-  const serverMap = new Map(serverEntries.map(f => [f.name, f]))
-  const clientMap = new Map(clientEntries.map(f => [f.name, f]))
+  const serverMap = new Map(serverEntries.map((f) => [f.name, f]))
+  const filteredClientEntries = (clientEntries || []).filter(
+    (f) => f?.name && isAcceptedFileName(f.name)
+  )
+  const clientMap = new Map(filteredClientEntries.map((f) => [f.name, f]))
 
   const upload = []
   const download = []
@@ -95,7 +112,9 @@ exports.normalizeFileName = (name) => {
   const base = path.basename(name).trim()
   if (!base) return null
   const sanitized = base.replace(/[^A-Za-z0-9_.-]/g, '_')
-  return sanitized.length ? sanitized : null
+  if (!sanitized.length) return null
+  if (shouldIgnoreFileName(sanitized)) return null
+  return sanitized
 }
 
 exports.entryForFile = async ({ userId, folderId, fileName, lastModified }) => {

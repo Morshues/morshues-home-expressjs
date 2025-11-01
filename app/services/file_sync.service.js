@@ -1,20 +1,8 @@
 const fs = require('fs/promises')
-const fsNative = require('fs')
 const path = require('path')
-const crypto = require('crypto')
 
 const root = path.resolve(__dirname, '../../file_sync')
 const HIDE_FILE_REGEX = /^\./
-
-async function checksum(filePath) {
-  const hash = crypto.createHash('md5')
-  const stream = fsNative.createReadStream(filePath)
-  return new Promise((resolve, reject) => {
-    stream.on('data', (d) => hash.update(d))
-    stream.on('end', () => resolve(hash.digest('hex')))
-    stream.on('error', reject)
-  })
-}
 
 function buildDirectory(userId, folderId) {
   return path.join(root, userId.toString(), folderId)
@@ -42,7 +30,6 @@ async function buildEntry(dir, name, lastModified = 0) {
     name,
     size: stats.size,
     mtimeMs: stats.mtimeMs,
-    checksum: await checksum(filePath),
   }
 }
 
@@ -81,7 +68,7 @@ exports.diff = async ({ userId, folderId, clientEntries }) => {
       upload.push(clientFile)
       continue
     }
-    if (serverFile.checksum !== clientFile.checksum) {
+    if (serverFile.name !== clientFile.name) {
       if (serverFile.mtimeMs > clientFile.mtimeMs) download.push(serverFile)
       else if (serverFile.mtimeMs < clientFile.mtimeMs) upload.push(clientFile)
       else conflicts.push({ name, clientFile, serverFile })

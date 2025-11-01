@@ -21,7 +21,7 @@ function buildDirectory(userId, folderId) {
 }
 
 function shouldIgnoreFileName(name) {
-  return HIDE_FILE_REGEX.has(name)
+  return HIDE_FILE_REGEX.test(name)
 }
 
 function isAcceptedFileName(name) {

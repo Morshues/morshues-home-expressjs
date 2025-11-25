@@ -98,7 +98,7 @@ exports.normalizeFileName = (name) => {
   if (typeof name !== 'string') return null
   const base = path.basename(name).trim()
   if (!base) return null
-  const sanitized = base.replace(/[^A-Za-z0-9_.-]/g, '_')
+  const sanitized = base.replace(/[^A-Za-z0-9_.~-]/g, '_')
   if (!sanitized.length) return null
   if (shouldIgnoreFileName(sanitized)) return null
   return sanitized

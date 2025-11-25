@@ -1,4 +1,4 @@
-const SAFE_SEGMENT_REGEX = /^[A-Za-z0-9_.-]+$/
+const SAFE_SEGMENT_REGEX = /^[A-Za-z0-9_.~-]+$/
 
 exports.validateFolderId = (req, res, next, value) => {
   if (!SAFE_SEGMENT_REGEX.test(value)) {

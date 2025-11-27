@@ -1,5 +1,4 @@
 const { Api } = require('telegram')
-const { client } = require('./tg_client')
 
 const TG_CHUNK_SIZE = 512 * 1024
 
@@ -7,10 +6,14 @@ const db = require('../models')
 const TgViewedHistory = db.TgViewedHistory
 const videoFileCache = new Map();
 
-async function getMessageFromLink(tgLink) {
+function getCacheKey(userId, historyId) {
+  return `${userId}:${historyId}`
+}
+
+async function getMessageFromLink(client, tgLink) {
   const [channelName, msgIdStr] = tgLink.replace('https://t.me/', '').split('/');
   const channel = await client.getEntity(channelName);
-  return (await client.getMessages(channel, {ids: parseInt(msgIdStr, 10)}))[0];
+  return (await client.getMessages(channel, {ids: Number.parseInt(msgIdStr, 10)}))[0];
 }
 
 function extractVideoDocument(message) {
@@ -48,9 +51,10 @@ function buildVideoCache(document) {
   }
 }
 
-async function buildVideo(document, messageUrl) {
+async function buildVideo(userId, document, messageUrl) {
   const [history] = await TgViewedHistory.findOrCreate({
-    where: { messageUrl: messageUrl },
+    where: { messageUrl: messageUrl, userId },
+    defaults: { userId },
   })
 
   const cache = buildVideoCache(document)
@@ -58,13 +62,14 @@ async function buildVideo(document, messageUrl) {
   // Update filename and duration
   history.filename = cache.filename;
   history.duration = cache.duration;
+  history.userId = userId
   await history.save();
 
-  videoFileCache.set(history.id, cache)
+  videoFileCache.set(getCacheKey(userId, history.id), cache)
   return [history, cache]
 }
 
-async function getVideoCache(id, toView = false) {
+async function getVideoCache(client, userId, id, toView = false) {
   const history = await TgViewedHistory.findOne({
     where: {id: id}
   })
@@ -75,21 +80,22 @@ async function getVideoCache(id, toView = false) {
     history.updateLastViewed()
       .catch(console.error)
   }
-  if (videoFileCache.has(id)) {
-    return videoFileCache.get(id)
+  const key = getCacheKey(userId, id)
+  if (videoFileCache.has(key)) {
+    return videoFileCache.get(key)
   }
-  const message = await getMessageFromLink(history.messageUrl)
+  const message = await getMessageFromLink(client, history.messageUrl)
   const document = extractVideoDocument(message)
-  const [_, cache] = await buildVideo(document, history.messageUrl)
+  const [_, cache] = await buildVideo(userId, document, history.messageUrl)
   return cache
 }
 
-function deleteVideoCache(id) {
-  videoFileCache.delete(id)
+function deleteVideoCache(userId, id) {
+  videoFileCache.delete(getCacheKey(userId, id))
 }
 
-async function listVideoHistory(nsfw = false) {
-  const where = {};
+async function listVideoHistory(userId, nsfw = false) {
+  const where = { userId };
   if (nsfw === true) {
     where.nsfw = false;
   }
@@ -99,14 +105,21 @@ async function listVideoHistory(nsfw = false) {
   })
 }
 
-async function getVideoHistoryByTgUrl(tgUrl) {
+async function getVideoHistoryByTgUrl(userId, tgUrl) {
   return await TgViewedHistory.findOne({
-    where: { messageUrl: tgUrl }
+    where: { messageUrl: tgUrl, userId }
   })
 }
 
-async function getFileChunk(historyId, offset) {
-  const { dcId, loc } = videoFileCache.get(historyId)
+async function getFileChunk(client, userId, historyId, offset) {
+  let cache = videoFileCache.get(getCacheKey(userId, historyId))
+  if (!cache) {
+    cache = await getVideoCache(client, userId, historyId)
+  }
+  if (!cache) {
+    throw new Error('File cache not found for requested video')
+  }
+  const { dcId, loc } = cache
   const sender = await client.getSender(dcId);
   return await sender.send(
     new Api.upload.GetFile({
@@ -119,8 +132,8 @@ async function getFileChunk(historyId, offset) {
   )
 }
 
-async function updateHistory(historyId, updates = {}) {
-  const record = await TgViewedHistory.findByPk(historyId)
+async function updateHistory(historyId, userId, updates = {}) {
+  const record = await TgViewedHistory.findOne({ where: { id: historyId, userId } })
   if (!record) throw new Error('Record not found')
 
   if ('nsfw' in updates) {
@@ -134,10 +147,10 @@ async function updateHistory(historyId, updates = {}) {
   return record
 }
 
-async function removeRecord(historyId) {
-  videoFileCache.delete(historyId)
+async function removeRecord(historyId, userId) {
+  deleteVideoCache(userId, historyId)
   await TgViewedHistory.destroy({
-    where: {id: historyId}
+    where: {id: historyId, userId}
   })
 }
 

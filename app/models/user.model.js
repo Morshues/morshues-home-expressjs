@@ -46,6 +46,16 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'user_id',
       as: 'adminInfo',
     })
+
+    User.hasOne(models.TelegramSession, {
+      foreignKey: 'user_id',
+      as: 'telegramSession',
+    })
+
+    User.hasMany(models.TgViewedHistory, {
+      foreignKey: 'user_id',
+      as: 'tgViewedHistory',
+    })
   }
 
   return User

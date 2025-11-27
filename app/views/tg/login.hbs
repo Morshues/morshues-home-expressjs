@@ -1,0 +1,31 @@
+<head>
+    <title>Telegram Login</title>
+    <style>
+        body {
+            text-align: center;
+        }
+        form {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>Telegram Login</h1>
+<form action="/tg/login" method="POST">
+    <div>
+        <label for="phoneNumber">Phone Number：</label>
+        <input type="tel" id="phoneNumber" name="phoneNumber" value="{{phoneNumber}}" size="30" required>
+    </div>
+    <br />
+    <div>
+        <label for="password">2FA Password：</label>
+        <input type="password" id="password" name="password" size="30" placeholder="Optional">
+    </div>
+    <br />
+    <button type="submit">Send Code</button>
+</form>
+<br />
+{{#if error}}
+    <span class="message error">{{error}}</span>
+{{/if}}
+</body>

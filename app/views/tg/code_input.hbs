@@ -6,6 +6,9 @@
 
 <body>
 <h1>Telegram Code Input</h1>
+{{#if phoneNumber}}
+    <p>We sent a code to {{phoneNumber}}.</p>
+{{/if}}
 <br />
 <form action="/tg/code" method="POST">
     <label for="code">Code：</label>

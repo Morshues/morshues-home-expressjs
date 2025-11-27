@@ -1,17 +1,29 @@
 const { RPCError } = require('telegram/errors');
-const url = require('url');
+const url = require('node:url');
 const dayjs = require('dayjs');
 
-const { client, startLogin, submitCode } = require('../services/tg_client')
+const { startLogin, submitCode, getClient } = require('../services/tg_client')
 const tgService = require('../services/tg_service')
+const db = require('../models')
 const { TG_CHUNK_SIZE } = tgService
 
+const TelegramSession = db.TelegramSession
+
 const FLASH_CODE_INPUT_ERROR = 'codeInputError'
+const FLASH_TG_LOGIN_ERROR = 'tgLoginError'
 const FLASH_TG_LINK_INPUT_ERROR = 'tgLinkInputError'
+
+async function ensureTelegramClient(userId) {
+  const client = await getClient(userId)
+  if (!client) {
+    throw new Error('Telegram account not connected')
+  }
+  return client
+}
 
 
 exports.index = async (req, res) => {
-  const history = await tgService.listVideoHistory()
+  const history = await tgService.listVideoHistory(req.user.id)
   const toShowHistory = history.map(record => {
     const plain = record.get({plain: true});
     return {
@@ -27,8 +39,9 @@ exports.index = async (req, res) => {
 
 exports.video = async (req, res) => {
   const idRaw = req.query?.id?.trim()
-  const id = parseInt(idRaw, 10)
-  const fileData = await tgService.getVideoCache(id, true)
+  const id = Number.parseInt(idRaw, 10)
+  const client = await ensureTelegramClient(req.user.id)
+  const fileData = await tgService.getVideoCache(client, req.user.id, id, true)
   if (!fileData) {
     return res.status(400).json({ error: 'file not exist' });
   }
@@ -41,11 +54,11 @@ exports.video = async (req, res) => {
 
   if (rangeHeader) {
     const matches = rangeHeader.match(/bytes=(\d+)-(\d+)?/);
-    if (matches) {
-      start = parseInt(matches[1], 10);
-      if (matches[2]) {
-        end = parseInt(matches[2], 10);
-      }
+    if (matches.length > 1) {
+      start = Number.parseInt(matches[1], 10);
+    }
+    if (matches.length > 2) {
+      end = Number.parseInt(matches[2], 10);
     }
   }
 
@@ -84,7 +97,7 @@ exports.video = async (req, res) => {
   });
 
   try {
-    let firstFileChunk = await tgService.getFileChunk(id, tgStart)
+    let firstFileChunk = await tgService.getFileChunk(client, req.user.id, id, tgStart)
     let firstData = firstFileChunk.bytes.subarray(startBatchSize)
     res.write(firstData)
     console.log('offset', tgStart, 'len', firstFileChunk.bytes.length)
@@ -93,7 +106,7 @@ exports.video = async (req, res) => {
     while (ifNotClosed && offset <= end) {
       console.log('offset', offset, 'end', end)
 
-      let fileChunk = await tgService.getFileChunk(id, offset)
+      let fileChunk = await tgService.getFileChunk(client, req.user.id, id, offset)
 
       if (!fileChunk.bytes || fileChunk.bytes.length === 0) {
         break; // Finished
@@ -105,7 +118,7 @@ exports.video = async (req, res) => {
     }
   } catch (err) {
     if (err instanceof RPCError && err.errorMessage === 'FILE_REFERENCE_EXPIRED') {
-      tgService.deleteVideoCache(id)
+      tgService.deleteVideoCache(req.user.id, id)
       console.warn(`${id} expired`)
     } else {
       console.error('Read File error:', err);
@@ -118,8 +131,9 @@ exports.video = async (req, res) => {
 
 exports.videoThumbnail = async (req, res) => {
   const idRaw = req.query?.id?.trim()
-  const id = parseInt(idRaw, 10)
-  const fileData = await tgService.getVideoCache(id)
+  const id = Number.parseInt(idRaw, 10)
+  const client = await ensureTelegramClient(req.user.id)
+  const fileData = await tgService.getVideoCache(client, req.user.id, id)
   if (!fileData) {
     return res.status(400).json({ error: 'file not exist' });
   }
@@ -134,29 +148,69 @@ exports.videoThumbnail = async (req, res) => {
 }
 
 exports.login = async (req, res) => {
-  try {
-    res.render('tg/code_input', {
-      error: req.flash(FLASH_CODE_INPUT_ERROR),
-    })
-    await startLogin(null, (err) => {
-      req.flash(FLASH_CODE_INPUT_ERROR, err.message);
-      console.error('Telegram Login Error:', err.message);
-    });
+  const pending = req.session?.pendingTelegramLogin
+  const existingSession = await TelegramSession.findOne({ where: { user_id: req.user.id } })
 
-    res.redirect('/tg/');
+  res.render('tg/login', {
+    error: req.flash(FLASH_TG_LOGIN_ERROR),
+    phoneNumber: pending?.phoneNumber || existingSession?.phoneNumber || '',
+  })
+}
+
+exports.requestCode = async (req, res) => {
+  const phoneNumber = req.body?.phoneNumber?.trim()
+  const password = req.body?.password?.trim()
+
+  if (!phoneNumber) {
+    req.flash(FLASH_TG_LOGIN_ERROR, 'Phone number is required')
+    return res.redirect('/tg/login')
+  }
+
+  try {
+    await startLogin(req.user.id, phoneNumber, password)
+    req.session.pendingTelegramLogin = { phoneNumber }
+    res.redirect('/tg/code')
   } catch (error) {
-    console.error('Login to telegram error: ', error);
-    res.status(500).json({ error: 'Login Failed' });
+    console.error('Telegram Login Error:', error.message)
+    req.flash(FLASH_TG_LOGIN_ERROR, error.message)
+    res.redirect('/tg/login')
   }
 }
 
-exports.code = async (req, res) => {
+exports.codeInput = (req, res) => {
+  const pending = req.session?.pendingTelegramLogin
+  if (!pending) {
+    return res.redirect('/tg/login')
+  }
+
+  res.render('tg/code_input', {
+    error: req.flash(FLASH_CODE_INPUT_ERROR),
+    phoneNumber: pending.phoneNumber,
+  })
+}
+
+exports.resolveCode = async (req, res) => {
+  if (!req.session?.pendingTelegramLogin) {
+    req.flash(FLASH_CODE_INPUT_ERROR, 'Please request a login code first')
+    return res.redirect('/tg/login')
+  }
+
   const code = req.body?.code?.trim()
   if (!code) {
-    return res.status(400).json({ error: 'code missing' });
+    req.flash(FLASH_CODE_INPUT_ERROR, 'Code missing')
+    return res.redirect('/tg/code')
   }
-  await submitCode(code);
-  res.redirect('/tg/');
+  try {
+    await submitCode(req.user.id, code)
+    if (req.session) {
+      delete req.session.pendingTelegramLogin
+    }
+    res.redirect('/tg/');
+  } catch (error) {
+    console.error('Submit Telegram Code Error:', error.message)
+    req.flash(FLASH_CODE_INPUT_ERROR, error.message)
+    res.redirect('/tg/code')
+  }
 }
 
 exports.connect = async (req, res) => {
@@ -165,7 +219,7 @@ exports.connect = async (req, res) => {
     return res.status(400).json({ error: 'tgLink missing' });
   }
 
-  const history = await tgService.getVideoHistoryByTgUrl(tgLink)
+  const history = await tgService.getVideoHistoryByTgUrl(req.user.id, tgLink)
   if (history) {
     res.redirect(url.format({
       pathname:'/tg/video',
@@ -177,7 +231,8 @@ exports.connect = async (req, res) => {
   }
 
   try {
-    const message = await tgService.getMessageFromLink(tgLink)
+    const client = await ensureTelegramClient(req.user.id)
+    const message = await tgService.getMessageFromLink(client, tgLink)
     const document = tgService.extractVideoDocument(message)
 
     if (!document) {
@@ -187,7 +242,7 @@ exports.connect = async (req, res) => {
       return
     }
 
-    const [ history, _] = await tgService.buildVideo(document, tgLink)
+    const [ history ] = await tgService.buildVideo(req.user.id, document, tgLink)
 
     res.redirect(url.format({
       pathname:'/tg/video',
@@ -203,14 +258,14 @@ exports.connect = async (req, res) => {
 
 exports.list = async (req, res) => {
   const nsfw = req.body?.nsfw
-  const list = await tgService.listVideoHistory(nsfw)
+  const list = await tgService.listVideoHistory(req.user.id, nsfw)
   res.json(list)
 }
 
 exports.edit = async (req, res) => {
   const id = req.params.id
   try {
-    const history = await tgService.updateHistory(id, req.body)
+    const history = await tgService.updateHistory(id, req.user.id, req.body)
     res.send(history)
   } catch (err) {
     res.status(404).send(err.message)
@@ -219,6 +274,6 @@ exports.edit = async (req, res) => {
 
 exports.delete = async (req, res) => {
   const id = req.params.id
-  await tgService.removeRecord(id)
+  await tgService.removeRecord(id, req.user.id)
   res.redirect('/tg/');
 }

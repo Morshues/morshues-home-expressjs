@@ -5,10 +5,16 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
+    userId: {
+      field: 'user_id',
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      unique: 'tg_history_user_message',
+    },
     messageUrl: {
       type: DataTypes.TEXT,
       allowNull: false,
-      unique: true,
+      unique: 'tg_history_user_message',
       validate: {
         isUrl: {
           args: true,
@@ -53,6 +59,14 @@ module.exports = (sequelize, DataTypes) => {
   TgViewedHistory.prototype.updateLastViewed = async function () {
     this.lastViewedAt = new Date()
     await this.save()
+  }
+
+  TgViewedHistory.associate = (models) => {
+    TgViewedHistory.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user',
+      onDelete: 'CASCADE'
+    })
   }
 
   return TgViewedHistory

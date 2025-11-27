@@ -6,7 +6,7 @@ const ensureAuthenticated = (req, res, next) => {
 }
 
 const requireAdmin = async (req, res, next) => {
-  if (!req.isAuthenticated || !req.isAuthenticated()) {
+  if (!req.isAuthenticated?.()) {
     return res.status(401).send('Please Login to check this page')
   }
 

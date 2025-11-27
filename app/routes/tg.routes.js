@@ -2,7 +2,9 @@ const express = require('express')
 const router = express.Router()
 const tgController = require('../controllers/tg.controller')
 const { requireTelegramLogin, loggedInRedirect }  = require('../middlewares/tg_auth');
+const { ensureAuthenticated } = require('../middlewares/auth')
 
+router.use(ensureAuthenticated)
 
 router.get(`/`, requireTelegramLogin, tgController.index)
 
@@ -11,8 +13,10 @@ router.get(`/video`, requireTelegramLogin, tgController.video)
 router.get(`/video_thumbs`, requireTelegramLogin, tgController.videoThumbnail)
 
 router.get(`/login`, loggedInRedirect, tgController.login)
+router.post(`/login`, loggedInRedirect, tgController.requestCode)
 
-router.post(`/code`, loggedInRedirect, tgController.code)
+router.get(`/code`, loggedInRedirect, tgController.codeInput)
+router.post(`/code`, loggedInRedirect, tgController.resolveCode)
 
 router.post(`/connect`, requireTelegramLogin, tgController.connect)
 

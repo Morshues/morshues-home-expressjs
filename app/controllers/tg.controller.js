@@ -54,11 +54,11 @@ exports.video = async (req, res) => {
 
   if (rangeHeader) {
     const matches = rangeHeader.match(/bytes=(\d+)-(\d+)?/);
-    if (matches.length > 1) {
+    if (matches?.[1]) {
       start = Number.parseInt(matches[1], 10);
-    }
-    if (matches.length > 2) {
-      end = Number.parseInt(matches[2], 10);
+      if (matches?.[2] !== undefined) {
+        end = Number.parseInt(matches[2], 10);
+      }
     }
   }
 
@@ -90,10 +90,16 @@ exports.video = async (req, res) => {
     'Content-Type': 'video/mp4',
   });
 
-  let ifNotClosed = true;
+  let streamOpen = true;
+  req.on('aborted', () => {
+    console.log('Client aborted request, stop transferring.')
+    streamOpen = false
+  })
   req.on('close', () => {
-    console.log('User stop the request, stop transferring.');
-    ifNotClosed = false;
+    if (!res.writableEnded) {
+      console.log('User stop the request, stop transferring.');
+      streamOpen = false;
+    }
   });
 
   try {
@@ -103,7 +109,7 @@ exports.video = async (req, res) => {
     console.log('offset', tgStart, 'len', firstFileChunk.bytes.length)
 
     let offset = tgStart + TG_CHUNK_SIZE;
-    while (ifNotClosed && offset <= end) {
+    while (streamOpen && offset <= end) {
       console.log('offset', offset, 'end', end)
 
       let fileChunk = await tgService.getFileChunk(client, req.user.id, id, offset)

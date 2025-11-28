@@ -9,6 +9,7 @@ exports.jwtAuth = (req, res, next) => {
   try {
     req.jwt = jwt.verify(m[1], JWT_ACCESS_SECRET)
     req.userId = Number(req.jwt.sub)
+    req.user = { id: req.userId }
     if (req.userId === 0) {
       return res.status(401).json({ ok: false, msg: 'unauthorized' })
     }

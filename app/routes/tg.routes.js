@@ -2,28 +2,32 @@ const express = require('express')
 const router = express.Router()
 const tgController = require('../controllers/tg.controller')
 const { requireTelegramLogin, loggedInRedirect }  = require('../middlewares/tg_auth');
-const { ensureAuthenticated } = require('../middlewares/auth')
+const { ensureAuthenticated, } = require('../middlewares/auth')
+const { jwtAuth } = require("../middlewares/jwt_auth");
 
-router.use(ensureAuthenticated)
+router.get(`/`, ensureAuthenticated, requireTelegramLogin, tgController.index)
 
-router.get(`/`, requireTelegramLogin, tgController.index)
+router.get(`/video`, ensureAuthenticated, requireTelegramLogin, tgController.video)
+router.get(`/video_api`, jwtAuth, tgController.video)
 
-router.get(`/video`, requireTelegramLogin, tgController.video)
+router.get(`/video_thumbs`, ensureAuthenticated, requireTelegramLogin, tgController.videoThumbnail)
+router.get(`/video_thumbs_api`, jwtAuth, tgController.videoThumbnail)
 
-router.get(`/video_thumbs`, requireTelegramLogin, tgController.videoThumbnail)
+router.get(`/login`, ensureAuthenticated, loggedInRedirect, tgController.login)
+router.post(`/login`, ensureAuthenticated, loggedInRedirect, tgController.requestCode)
 
-router.get(`/login`, loggedInRedirect, tgController.login)
-router.post(`/login`, loggedInRedirect, tgController.requestCode)
+router.get(`/code`, ensureAuthenticated, loggedInRedirect, tgController.codeInput)
+router.post(`/code`, ensureAuthenticated, loggedInRedirect, tgController.resolveCode)
 
-router.get(`/code`, loggedInRedirect, tgController.codeInput)
-router.post(`/code`, loggedInRedirect, tgController.resolveCode)
+router.post(`/connect`, ensureAuthenticated, requireTelegramLogin, tgController.connect)
 
-router.post(`/connect`, requireTelegramLogin, tgController.connect)
+router.post(`/list`, ensureAuthenticated, requireTelegramLogin, tgController.list)
+router.post(`/list_api`, jwtAuth, tgController.list)
 
-router.post(`/list`, requireTelegramLogin, tgController.list)
+router.post('/:id/edit', ensureAuthenticated, requireTelegramLogin, tgController.edit)
+router.post('/:id/edit_api', jwtAuth, tgController.edit)
 
-router.post('/:id/edit', requireTelegramLogin, tgController.edit)
-
-router.post(`/:id/delete`, requireTelegramLogin, tgController.delete)
+router.post(`/:id/delete`, ensureAuthenticated, requireTelegramLogin, tgController.delete)
+router.post(`/:id/delete_api`,jwtAuth, tgController.delete)
 
 module.exports = router

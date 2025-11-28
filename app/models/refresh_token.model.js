@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     expiresAt: { type: DataTypes.DATE, allowNull: false, field: 'expires_at' },
     revokedAt: { type: DataTypes.DATE, field: 'revoked_at' },
   }, {
-    tableName: 'RefreshTokens',
+    tableName: 'refresh_tokens',
     underscored: true,
     timestamps: true,
     createdAt: 'created_at',

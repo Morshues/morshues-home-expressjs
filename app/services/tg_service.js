@@ -4,6 +4,7 @@ const TG_CHUNK_SIZE = 512 * 1024
 
 const db = require('../models')
 const TgViewedHistory = db.TgViewedHistory
+const TgAbbr = db.TgAbbr
 const videoFileCache = new Map();
 
 function getCacheKey(userId, historyId) {
@@ -99,10 +100,22 @@ async function listVideoHistory(userId, nsfw = false) {
   if (nsfw === true) {
     where.nsfw = false;
   }
-  return await TgViewedHistory.findAll({
+
+  const histories = await TgViewedHistory.findAll({
     where,
     order: [['lastViewedAt', 'DESC']]
   })
+
+  const abbrs = await TgAbbr.findAll()
+
+  for (const history of histories) {
+    for (const abbr of abbrs) {
+      const regex = new RegExp(abbr.abbrRule, 'g')
+      history.filename = history.filename.replace(regex, abbr.displayRule)
+    }
+  }
+
+  return histories
 }
 
 async function getVideoHistoryByTgUrl(userId, tgUrl) {

@@ -8,6 +8,7 @@ const db = require('../models')
 const { TG_CHUNK_SIZE } = tgService
 
 const TelegramSession = db.TelegramSession
+const TgAbbr = db.TgAbbr
 
 const FLASH_CODE_INPUT_ERROR = 'codeInputError'
 const FLASH_TG_LOGIN_ERROR = 'tgLoginError'
@@ -32,8 +33,10 @@ exports.index = async (req, res) => {
       lastViewedAt: dayjs(plain.lastViewedAt).format('YYYY-MM-DD HH:mm')
     }
   })
+  const abbrs = await TgAbbr.findAll()
   res.render('tg/index', {
     history: toShowHistory,
+    abbrs: abbrs.map(a => a.get({ plain: true })),
   })
 }
 
@@ -282,4 +285,32 @@ exports.delete = async (req, res) => {
   const id = req.params.id
   await tgService.removeRecord(id, req.user.id)
   res.redirect('/tg/');
+}
+
+exports.createAbbr = async (req, res) => {
+  const { abbrRule, displayRule } = req.body
+  if (!abbrRule || !displayRule) {
+    return res.status(400).send('abbrRule and displayRule are required')
+  }
+  await TgAbbr.create({ abbrRule, displayRule })
+  res.redirect('/tg/')
+}
+
+exports.updateAbbr = async (req, res) => {
+  const id = req.params.id
+  const { abbrRule, displayRule } = req.body
+  const abbr = await TgAbbr.findByPk(id)
+  if (!abbr) {
+    return res.status(404).send('Abbr not found')
+  }
+  abbr.abbrRule = abbrRule
+  abbr.displayRule = displayRule
+  await abbr.save()
+  res.redirect('/tg/')
+}
+
+exports.deleteAbbr = async (req, res) => {
+  const id = req.params.id
+  await TgAbbr.destroy({ where: { id } })
+  res.redirect('/tg/')
 }

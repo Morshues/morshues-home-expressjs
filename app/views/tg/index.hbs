@@ -88,4 +88,47 @@
 {{else}}
     <p>No Tg Viewed History</p>
 {{/if}}
+
+<br />
+<hr />
+<h2>Abbreviation Rules</h2>
+
+<h3>Add New Rule</h3>
+<form action="/tg/abbr" method="POST">
+    <label for="abbrRule">Abbr Rule (Regex):</label>
+    <input type="text" id="abbrRule" name="abbrRule" required />
+    <label for="displayRule">Display Rule:</label>
+    <input type="text" id="displayRule" name="displayRule" required />
+    <button type="submit">Add</button>
+</form>
+
+<br />
+{{#if abbrs.length}}
+    <h3>Existing Rules</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Abbr Rule</th>
+            <th>Display Rule</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each abbrs}}
+            <tr>
+                <form action="/tg/abbr/{{id}}" method="POST">
+                    <td><input type="text" name="abbrRule" value="{{abbrRule}}" required /></td>
+                    <td><input type="text" name="displayRule" value="{{displayRule}}" required /></td>
+                    <td>
+                        <button type="submit">Save</button>
+                        <button type="submit" formaction="/tg/abbr/{{id}}/delete">Delete</button>
+                    </td>
+                </form>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+{{else}}
+    <p>No abbreviation rules defined</p>
+{{/if}}
 </body>

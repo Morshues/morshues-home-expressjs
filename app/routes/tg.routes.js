@@ -30,4 +30,8 @@ router.post('/:id/edit_api', jwtAuth, tgController.edit)
 router.post(`/:id/delete`, ensureAuthenticated, requireTelegramLogin, tgController.delete)
 router.post(`/:id/delete_api`,jwtAuth, tgController.delete)
 
+router.post(`/abbr`, ensureAuthenticated, requireTelegramLogin, tgController.createAbbr)
+router.post(`/abbr/:id`, ensureAuthenticated, requireTelegramLogin, tgController.updateAbbr)
+router.post(`/abbr/:id/delete`, ensureAuthenticated, requireTelegramLogin, tgController.deleteAbbr)
+
 module.exports = router

@@ -25,6 +25,7 @@ db.Admin = require('./admin.model')(sequelize, Sequelize)
 db.RefreshToken = require('./refresh_token.model')(sequelize, Sequelize)
 db.Url = require('./url.model.js')(sequelize, Sequelize)
 db.TgViewedHistory = require('./tg.model.js')(sequelize, Sequelize)
+db.TgAbbr = require('./tg_abbr.model')(sequelize, Sequelize)
 db.LinkPage = require('./link_page.model')(sequelize, Sequelize)
 db.TelegramSession = require('./telegram_session.model')(sequelize, Sequelize)
 

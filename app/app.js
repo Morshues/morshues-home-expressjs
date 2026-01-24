@@ -46,7 +46,8 @@ app.engine('hbs', engine({
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(logger('dev'));
+app.use(logger(':remote-addr - [:date[iso]] ":method :url HTTP/:http-version" :status :res[content-length] :response-time ms \n' +
+  '\t":user-agent"'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());

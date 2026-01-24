@@ -117,8 +117,8 @@
         {{#each abbrs}}
             <tr>
                 <form action="/tg/abbr/{{id}}" method="POST">
-                    <td><input type="text" name="abbrRule" value="{{abbrRule}}" required /></td>
-                    <td><input type="text" name="displayRule" value="{{displayRule}}" required /></td>
+                    <td><input type="text" name="abbrRule" size="120" value="{{abbrRule}}" required /></td>
+                    <td><input type="text" name="displayRule" size="20" value="{{displayRule}}" required /></td>
                     <td>
                         <button type="submit">Save</button>
                         <button type="submit" formaction="/tg/abbr/{{id}}/delete">Delete</button>

@@ -51,6 +51,20 @@ exports.uploadFile = async (req, res, next) => {
   }
 }
 
+exports.deleteFile = async (req, res, next) => {
+  try {
+    const { userId, folderId, fileName } = req
+
+    await service.deleteFile({ userId, folderId, fileName })
+    res.json({ ok: true })
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return res.status(404).json({ ok: false, msg: 'file not found' })
+    }
+    next(err)
+  }
+}
+
 exports.downloadFile = async (req, res, next) => {
   try {
     const { userId, folderId, fileName } = req

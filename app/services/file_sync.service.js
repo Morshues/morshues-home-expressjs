@@ -104,6 +104,11 @@ exports.normalizeFileName = (name) => {
   return sanitized
 }
 
+exports.deleteFile = async ({ userId, folderId, fileName }) => {
+  const filePath = path.join(buildDirectory(userId, folderId), fileName)
+  await fs.unlink(filePath)
+}
+
 exports.entryForFile = async ({ userId, folderId, fileName, lastModified }) => {
   const dir = buildDirectory(userId, folderId)
   const entry = await buildEntry(dir, fileName, lastModified)

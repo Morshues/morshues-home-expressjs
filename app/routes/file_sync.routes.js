@@ -28,5 +28,6 @@ router.get('/:folderId/files', jwtAuth, ctrl.listFolder)
 router.post('/:folderId/sync', jwtAuth, ctrl.syncFolder)
 router.post('/:folderId/upload', jwtAuth, upload.single('file'), ctrl.uploadFile)
 router.get('/:folderId/files/:fileName/download', jwtAuth, ctrl.downloadFile)
+router.delete('/:folderId/files/:fileName', jwtAuth, ctrl.deleteFile)
 
 module.exports = router

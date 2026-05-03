@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const flash = require('connect-flash');
 const { engine } = require('express-handlebars');
 const dayjs = require('dayjs');
@@ -14,15 +15,32 @@ const shortenedRoutes = require('./routes/url.routes');
 const passport = require('passport');
 require('./config/passport')(passport);
 
+const db = require('./models');
+
 const app = express();
 
 require('dotenv').config();
 
+const sessionStore = new SequelizeStore({
+  db: db.sequelize,
+  tableName: 'sessions',
+  checkExpirationInterval: 15 * 60 * 1000,
+  expiration: 30 * 24 * 60 * 60 * 1000,
+});
+sessionStore.sync();
+
 app.use(session({
   secret: process.env.SESSION_SECRET_KEY,
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }
+  rolling: true,
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  },
 }));
 app.use(flash());
 

@@ -45,9 +45,15 @@ exports.register = async (req, res) => {
 }
 
 exports.user = (req, res) => {
+  const webhookToken = req.user?.webhookToken
+  const webhookUrl = webhookToken
+    ? `${req.protocol}://${req.headers.host}/api/webhook/${webhookToken}`
+    : null
   res.render('auth/user', {
     title: 'User',
     showUserStatus: true,
+    webhookToken,
+    webhookUrl,
   })
 }
 

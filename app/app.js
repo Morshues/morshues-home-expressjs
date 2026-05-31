@@ -93,6 +93,7 @@ app.use('/api/auth', require('./routes/auth.api.routes'));
 app.use('/', indexRouter);
 app.use('/family_private', familyPrivateRoutes);
 app.use('/', shortenedRoutes);
+app.use('/', require('./routes/webhook.routes'));
 
 if (process.env.ENV === 'local') {
   // only open these functions on local

@@ -28,6 +28,7 @@ db.TgViewedHistory = require('./tg.model.js')(sequelize, Sequelize)
 db.TgAbbr = require('./tg_abbr.model')(sequelize, Sequelize)
 db.LinkPage = require('./link_page.model')(sequelize, Sequelize)
 db.TelegramSession = require('./telegram_session.model')(sequelize, Sequelize)
+db.WebhookMessage = require('./webhook_message.model')(sequelize, Sequelize)
 
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {

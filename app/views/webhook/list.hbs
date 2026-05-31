@@ -1,0 +1,93 @@
+<style>
+    .messages {
+        max-width: 1000px;
+        margin: 1em auto;
+    }
+    .filter {
+        max-width: 1000px;
+        margin: 1em auto;
+    }
+    .msg {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 1em;
+        padding: 0.75em 1em;
+        background: #fafafa;
+    }
+    .msg-meta {
+        font-size: 0.9em;
+        color: #555;
+        margin-bottom: 0.5em;
+    }
+    .msg-meta strong {
+        color: #222;
+    }
+    .channel-tag {
+        display: inline-block;
+        padding: 1px 8px;
+        background: #e6f0ff;
+        border: 1px solid #b6d4fe;
+        border-radius: 10px;
+        font-size: 0.85em;
+        color: #06c;
+    }
+    details {
+        margin-top: 0.3em;
+    }
+    details summary {
+        cursor: pointer;
+        color: #06c;
+    }
+    pre {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 0.5em;
+        overflow: auto;
+        max-height: 300px;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    .empty {
+        text-align: center;
+        color: #777;
+        margin-top: 2em;
+    }
+</style>
+
+<center><h1>Recent Webhook Messages</h1></center>
+
+<div class="filter">
+    <form method="GET" action="/webhook">
+        <label for="channel">Filter by channel:</label>
+        <input type="text" id="channel" name="channel" value="{{filterChannel}}" placeholder="(all)" />
+        <button type="submit">Apply</button>
+        {{#if filterChannel}}
+            <a href="/webhook">Clear</a>
+        {{/if}}
+    </form>
+</div>
+
+<div class="messages">
+    {{#if messages.length}}
+        {{#each messages}}
+            <div class="msg">
+                <div class="msg-meta">
+                    <strong>#{{id}}</strong> &middot;
+                    <span class="channel-tag">{{channel}}</span> &middot;
+                    {{formatDate receivedAt}} &middot;
+                    from <code>{{sourceIp}}</code>
+                </div>
+                <details>
+                    <summary>Body</summary>
+                    <pre>{{body}}</pre>
+                </details>
+                <details>
+                    <summary>Headers</summary>
+                    <pre>{{headers}}</pre>
+                </details>
+            </div>
+        {{/each}}
+    {{else}}
+        <div class="empty">No webhook messages yet.</div>
+    {{/if}}
+</div>

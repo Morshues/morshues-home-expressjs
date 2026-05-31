@@ -1,3 +1,5 @@
+const crypto = require('crypto')
+
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
     email: {
@@ -35,10 +37,23 @@ module.exports = (sequelize, DataTypes) => {
     },
     lastLogin: {
       type: DataTypes.DATE
-    }
+    },
+    webhookToken: {
+      field: 'webhook_token',
+      type: DataTypes.STRING(64),
+      allowNull: false,
+      unique: true,
+    },
   }, {
     tableName: 'users',
-    timestamps: true
+    timestamps: true,
+    hooks: {
+      beforeValidate: (user) => {
+        if (!user.webhookToken) {
+          user.webhookToken = crypto.randomBytes(24).toString('base64url')
+        }
+      },
+    },
   })
 
   User.associate = (models) => {
@@ -55,6 +70,11 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.TgViewedHistory, {
       foreignKey: 'user_id',
       as: 'tgViewedHistory',
+    })
+
+    User.hasMany(models.WebhookMessage, {
+      foreignKey: 'user_id',
+      as: 'webhookMessages',
     })
   }
 

@@ -10,6 +10,22 @@
     <a href="/tg/">TG Page</a>
 </div>
 
+<div style="margin: 1em 0; padding: 1em; background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 4px;">
+    <strong>Your webhook</strong><br />
+    <div style="margin-top: 0.5em">
+        Token: <code>{{webhookToken}}</code>
+    </div>
+    <div style="margin-top: 0.3em">
+        Endpoint: <code>POST {{webhookUrl}}/&lt;channel&gt;</code>
+    </div>
+    <div style="margin-top: 0.3em; font-size: 0.9em; color: #555">
+        Replace <code>&lt;channel&gt;</code> with any name like <code>channel1</code> or <code>github</code> (letters, digits, <code>-</code>, <code>_</code>).
+    </div>
+    <div style="margin-top: 0.5em">
+        <a href="/webhook">View recent messages</a>
+    </div>
+</div>
+
 
 {{#if isAdmin}}
     <div style="padding: 1em; background: #ffcccc; border: 1px solid #ff9999;">

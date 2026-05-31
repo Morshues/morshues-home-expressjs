@@ -7,4 +7,6 @@ router.post('/api/webhook/:token/:channel', webhookController.receive)
 
 router.get('/webhook', ensureAuthenticated, webhookController.showList)
 
+router.post('/webhook/:id/delete', ensureAuthenticated, webhookController.deleteMessage)
+
 module.exports = router

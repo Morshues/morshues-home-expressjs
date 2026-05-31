@@ -66,3 +66,22 @@ exports.showList = async (req, res) => {
     filterChannel: where.channel || '',
   })
 }
+
+exports.deleteMessage = async (req, res) => {
+  const id = parseInt(req.params.id, 10)
+  if (!Number.isInteger(id)) {
+    return res.status(400).send('Invalid id')
+  }
+
+  const deleted = await WebhookMessage.destroy({
+    where: { id, userId: req.user.id },
+  })
+  if (deleted === 0) {
+    return res.status(404).send('Message not found')
+  }
+
+  const redirectTo = req.body.channel
+    ? `/webhook?channel=${encodeURIComponent(req.body.channel)}`
+    : '/webhook'
+  res.redirect(redirectTo)
+}

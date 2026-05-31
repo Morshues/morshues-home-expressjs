@@ -18,9 +18,30 @@
         font-size: 0.9em;
         color: #555;
         margin-bottom: 0.5em;
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
     }
     .msg-meta strong {
         color: #222;
+    }
+    .msg-meta .spacer {
+        flex: 1;
+    }
+    .delete-form {
+        margin: 0;
+    }
+    .delete-btn {
+        background: #fff;
+        border: 1px solid #d99;
+        color: #c33;
+        padding: 2px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.85em;
+    }
+    .delete-btn:hover {
+        background: #fee;
     }
     .channel-tag {
         display: inline-block;
@@ -76,6 +97,12 @@
                     <span class="channel-tag">{{channel}}</span> &middot;
                     {{formatDate receivedAt}} &middot;
                     from <code>{{sourceIp}}</code>
+                    <span class="spacer"></span>
+                    <form class="delete-form" method="POST" action="/webhook/{{id}}/delete"
+                          onsubmit="return confirm('Delete webhook message #{{id}}?');">
+                        <input type="hidden" name="channel" value="{{../filterChannel}}" />
+                        <button type="submit" class="delete-btn">Delete</button>
+                    </form>
                 </div>
                 <details>
                     <summary>Body</summary>

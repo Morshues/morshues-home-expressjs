@@ -5,6 +5,11 @@ const ensureAuthenticated = (req, res, next) => {
   res.redirect('/auth/login')
 }
 
+const ensureAuthenticatedApi = (req, res, next) => {
+  if (req.isAuthenticated?.()) return next()
+  res.status(401).json({ error: 'Login required' })
+}
+
 const requireAdmin = async (req, res, next) => {
   if (!req.isAuthenticated?.()) {
     return res.status(401).send('Please Login to check this page')
@@ -22,5 +27,6 @@ const requireAdmin = async (req, res, next) => {
 
 module.exports = {
   ensureAuthenticated,
+  ensureAuthenticatedApi,
   requireAdmin,
 }

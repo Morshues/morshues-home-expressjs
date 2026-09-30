@@ -5,6 +5,21 @@ const { exec } = require('child_process');
 const videoDir = path.join(__dirname, '../../local_assets/video');
 const thumbnailDir = path.join(__dirname, '../../local_assets/thumb')
 
+const VIDEO_EXT = /\.(mp4|avi|mov|mkv)$/i;
+
+// Resolve a path relative to videoDir, returning null if it escapes videoDir
+function resolveInVideoDir(relPath = '') {
+  const resolved = path.resolve(videoDir, relPath);
+  if (resolved !== videoDir && !resolved.startsWith(videoDir + path.sep)) {
+    return null;
+  }
+  return resolved;
+}
+
+function thumbnailPathOf(relPath) {
+  return path.join(thumbnailDir, `${relPath.split('/').join(':')}.jpg`);
+}
+
 function getLibraryTree(subDir) {
   const dir = path.join(videoDir, subDir)
   const result = [];
@@ -13,19 +28,22 @@ function getLibraryTree(subDir) {
   files.forEach((file) => {
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
+    const relPath = subDir ? `${subDir}/${file}` : file;
 
     if (stat.isDirectory()) {
       result.push({
         name: file,
         type: 'folder',
-        children: getLibraryTree(path.join(subDir,file)),
+        relPath,
+        children: getLibraryTree(relPath),
       });
-    } else if (/\.(mp4|avi|mov|mkv)$/.test(file)) {
+    } else if (VIDEO_EXT.test(file)) {
       result.push({
         name: file,
         type: 'video',
-        thumbnail: path.join('thumbnails',subDir,file),
-        path: path.join('v',subDir,file),
+        relPath,
+        thumbnail: `thumbnails/${relPath}`,
+        path: `v/${relPath}`,
       });
     }
   });
@@ -49,8 +67,11 @@ exports.itemList = (req, res) => {
 
 exports.streamVideo = (req, res) => {
   const filename = req.params.filename.join('/')
-  const filePath = path.join(videoDir, filename);
+  const filePath = resolveInVideoDir(filename);
 
+  if (!filePath) {
+    return res.status(400).json({ error: 'invalid path' });
+  }
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'video not exist' });
   }
@@ -92,10 +113,12 @@ exports.streamVideo = (req, res) => {
 
 exports.getThumbnail = async (req, res) => {
   const filename = req.params.filename.join('/')
-  const videoPath = path.join(videoDir, filename);
-  const thumbnailName = req.params.filename.join(':')
-  const thumbnailPath = path.join(thumbnailDir, `${thumbnailName}.jpg`);
+  const videoPath = resolveInVideoDir(filename);
+  const thumbnailPath = thumbnailPathOf(filename);
 
+  if (!videoPath) {
+    return res.status(400).send('invalid path');
+  }
   if (!fs.existsSync(videoPath)) {
     return res.status(404).send('video not exist');
   }
@@ -123,3 +146,84 @@ exports.getThumbnail = async (req, res) => {
     });
   });
 };
+exports.uploadVideos = (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  res.json({ uploaded: req.files.map(f => f.utf8Name || f.originalname) });
+};
+
+exports.deleteVideo = (req, res) => {
+  const filename = req.params.filename.join('/')
+  const filePath = resolveInVideoDir(filename);
+
+  if (!filePath || filePath === videoDir || !VIDEO_EXT.test(filePath)) {
+    return res.status(400).json({ error: 'invalid path' });
+  }
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    return res.status(404).json({ error: 'video not exist' });
+  }
+
+  try {
+    fs.unlinkSync(filePath);
+    fs.rmSync(thumbnailPathOf(filename), { force: true });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Unable to delete the video' });
+  }
+};
+
+exports.createFolder = (req, res) => {
+  const { dir = '', name = '' } = req.body || {};
+  const folderName = String(name).trim();
+  if (!folderName || folderName === '.' || folderName === '..' || /[\\/]/.test(folderName)) {
+    return res.status(400).json({ error: 'invalid folder name' });
+  }
+
+  const parentPath = resolveInVideoDir(dir);
+  if (!parentPath || !fs.existsSync(parentPath) || !fs.statSync(parentPath).isDirectory()) {
+    return res.status(400).json({ error: 'invalid parent folder' });
+  }
+
+  const folderPath = path.join(parentPath, folderName);
+  if (fs.existsSync(folderPath)) {
+    return res.status(409).json({ error: 'folder already exists' });
+  }
+
+  try {
+    fs.mkdirSync(folderPath);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Unable to create the folder' });
+  }
+};
+
+exports.deleteFolder = (req, res) => {
+  const dirname = req.params.dirname.join('/')
+  const folderPath = resolveInVideoDir(dirname);
+
+  if (!folderPath || folderPath === videoDir) {
+    return res.status(400).json({ error: 'invalid path' });
+  }
+  if (!fs.existsSync(folderPath) || !fs.statSync(folderPath).isDirectory()) {
+    return res.status(404).json({ error: 'folder not exist' });
+  }
+  // hidden files such as .DS_Store don't count as content
+  if (fs.readdirSync(folderPath).some(f => !f.startsWith('.'))) {
+    return res.status(409).json({ error: 'folder is not empty' });
+  }
+
+  try {
+    fs.rmSync(folderPath, { recursive: true });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Unable to delete the folder' });
+  }
+};
+
+exports.videoDir = videoDir;
+exports.VIDEO_EXT = VIDEO_EXT;
+exports.resolveInVideoDir = resolveInVideoDir;

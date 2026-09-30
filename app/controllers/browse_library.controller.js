@@ -5,6 +5,10 @@ const { exec } = require('child_process');
 const videoDir = path.join(__dirname, '../../local_assets/video');
 const thumbnailDir = path.join(__dirname, '../../local_assets/thumb')
 
+// A fresh server has no local_assets yet
+fs.mkdirSync(videoDir, { recursive: true });
+fs.mkdirSync(thumbnailDir, { recursive: true });
+
 const VIDEO_EXT = /\.(mp4|avi|mov|mkv)$/i;
 
 // Resolve a path relative to videoDir, returning null if it escapes videoDir
@@ -16,8 +20,9 @@ function resolveInVideoDir(relPath = '') {
   return resolved;
 }
 
+// Thumbnails mirror the video folder structure: thumb/<relPath>.jpg
 function thumbnailPathOf(relPath) {
-  return path.join(thumbnailDir, `${relPath.split('/').join(':')}.jpg`);
+  return path.join(thumbnailDir, `${relPath}.jpg`);
 }
 
 function getLibraryTree(subDir) {
@@ -128,6 +133,8 @@ exports.getThumbnail = async (req, res) => {
     return res.sendFile(thumbnailPath);
   }
 
+  fs.mkdirSync(path.dirname(thumbnailPath), { recursive: true });
+
   exec(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`, (err, stdout) => {
     if (err) {
       console.error('Unable to read the video information', err);
@@ -217,6 +224,7 @@ exports.deleteFolder = (req, res) => {
 
   try {
     fs.rmSync(folderPath, { recursive: true });
+    fs.rmSync(path.join(thumbnailDir, dirname), { recursive: true, force: true });
     res.json({ ok: true });
   } catch (err) {
     console.error(err);

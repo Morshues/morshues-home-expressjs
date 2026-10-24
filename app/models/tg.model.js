@@ -50,6 +50,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false
     },
+    groupId: {
+      field: 'group_id',
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   }, {
     timestamps: false,
     tableName: 'tg_viewed_history',
@@ -66,6 +71,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'user_id',
       as: 'user',
       onDelete: 'CASCADE'
+    })
+    TgViewedHistory.belongsTo(models.TgGroup, {
+      foreignKey: 'group_id',
+      as: 'group',
+      onDelete: 'SET NULL'
     })
   }
 

@@ -30,6 +30,13 @@ router.post('/:id/edit_api', jwtAuth, tgController.edit)
 router.post(`/:id/delete`, ensureAuthenticated, requireTelegramLogin, tgController.delete)
 router.post(`/:id/delete_api`,jwtAuth, tgController.delete)
 
+router.post(`/group`, ensureAuthenticated, requireTelegramLogin, tgController.createGroup)
+router.post(`/group_api`, jwtAuth, tgController.createGroup)
+router.post(`/group/:id`, ensureAuthenticated, requireTelegramLogin, tgController.updateGroup)
+router.post(`/group/:id/api`, jwtAuth, tgController.updateGroup)
+router.post(`/group/:id/delete`, ensureAuthenticated, requireTelegramLogin, tgController.deleteGroup)
+router.post(`/group/:id/delete_api`, jwtAuth, tgController.deleteGroup)
+
 router.post(`/abbr`, ensureAuthenticated, requireTelegramLogin, tgController.createAbbr)
 router.post(`/abbr/:id`, ensureAuthenticated, requireTelegramLogin, tgController.updateAbbr)
 router.post(`/abbr/:id/delete`, ensureAuthenticated, requireTelegramLogin, tgController.deleteAbbr)

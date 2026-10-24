@@ -7,6 +7,19 @@
         table {
             justify-self: center;
         }
+        .group {
+            margin: 8px auto;
+            width: fit-content;
+            text-align: left;
+        }
+        .group > summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .group > summary button {
+            margin-left: 8px;
+        }
     </style>
     <script>
         async function toggleNsfw(id, currentValue) {
@@ -29,6 +42,67 @@
                 console.error(err);
             }
         }
+
+        async function postJson(url, body) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            const data = await res.json().catch(() => ({}));
+            return { res, data };
+        }
+
+        async function changeGroup(id, groupId) {
+            const { res, data } = await postJson(`/tg/${id}/edit`, { groupId });
+            if (!res.ok) return alert(data.error || `操作失敗 (${res.status})`);
+            window.location.reload();
+        }
+
+        async function createGroup() {
+            const name = prompt('群組名稱');
+            if (!name) return;
+            const { res, data } = await postJson('/tg/group', { name });
+            if (!res.ok) return alert(data.error || `操作失敗 (${res.status})`);
+            window.location.reload();
+        }
+
+        async function renameGroup(event, id, currentName) {
+            event.preventDefault();
+            const name = prompt('新的群組名稱', currentName);
+            if (!name || name === currentName) return;
+            const { res, data } = await postJson(`/tg/group/${id}`, { name });
+            if (!res.ok) return alert(data.error || `操作失敗 (${res.status})`);
+            window.location.reload();
+        }
+
+        async function toggleGroupNsfw(event, id, currentValue) {
+            event.preventDefault();
+            const { res, data } = await postJson(`/tg/group/${id}`, { nsfw: !currentValue });
+            if (!res.ok) return alert(data.error || `操作失敗 (${res.status})`);
+            window.location.reload();
+        }
+
+        async function deleteGroup(event, id, name, count) {
+            event.preventDefault();
+            let force = false;
+            if (count > 0) {
+                if (!confirm(`群組「${name}」內有 ${count} 部影片，要連同影片紀錄一起刪除嗎？`)) return;
+                force = true;
+            } else if (!confirm(`刪除群組「${name}」？`)) {
+                return;
+            }
+            const { res, data } = await postJson(`/tg/group/${id}/delete`, { force });
+            if (!res.ok) return alert(data.error || `操作失敗 (${res.status})`);
+            window.location.reload();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.group-select').forEach(select => {
+                select.value = select.dataset.groupId;
+                select.addEventListener('change', () => changeGroup(select.dataset.id, select.value));
+            });
+        });
     </script>
 </head>
 <body>
@@ -37,6 +111,13 @@
 <form action="/tg/connect" method="POST">
     <label for="tgLink">Telegram Link：</label>
     <input type="url" id="tgLink" name="tgLink" size="80" required>
+    <label for="groupId">群組：</label>
+    <select id="groupId" name="groupId">
+        <option value="">未分群</option>
+        {{#each groups}}
+            <option value="{{id}}">{{name}}</option>
+        {{/each}}
+    </select>
     <button type="submit">Submit</button>
 </form>
 <br />
@@ -44,8 +125,7 @@
     <span class="message error">{{error}}</span>
 {{/if}}
 <br />
-{{#if history.length}}
-    <h2>History</h2>
+{{#*inline "videoTable"}}
     <table>
         <thead>
         <tr>
@@ -54,12 +134,13 @@
             <th>Created At</th>
             <th>Last Viewed At</th>
             <th>Submit</th>
+            <th>Group</th>
             <th>NSFW</th>
             <th>Delete</th>
         </tr>
         </thead>
         <tbody>
-        {{#each history}}
+        {{#each videos}}
             <tr>
                 <td><a href="{{messageUrl}}" target="_blank">{{messageUrl}}</a></td>
                 <td>{{filename}}</td>
@@ -70,6 +151,14 @@
                         <input type="hidden" name="tgLink" value="{{messageUrl}}" />
                         <button type="submit">Link</button>
                     </form>
+                </td>
+                <td>
+                    <select class="group-select" data-id="{{id}}" data-group-id="{{groupId}}">
+                        <option value="">未分群</option>
+                        {{#each @root.groups}}
+                            <option value="{{id}}">{{name}}</option>
+                        {{/each}}
+                    </select>
                 </td>
                 <td>
                     <button type="submit" onclick="toggleNsfw({{id}}, {{nsfw}})">
@@ -85,6 +174,30 @@
         {{/each}}
         </tbody>
     </table>
+{{/inline}}
+
+<h2>History</h2>
+<button type="button" onclick="createGroup()">新增群組</button>
+{{#if hasHistory}}
+    {{#each groups}}
+        <details class="group">
+            <summary data-name="{{name}}">
+                📁 {{name}} ({{children.length}})
+                <button type="button" onclick="renameGroup(event, {{id}}, this.closest('summary').dataset.name)">改名</button>
+                <button type="button" onclick="toggleGroupNsfw(event, {{id}}, {{#if nsfw}}true{{else}}false{{/if}})">NSFW: {{#if nsfw}}Enabled{{else}}Disabled{{/if}}</button>
+                <button type="button" onclick="deleteGroup(event, {{id}}, this.closest('summary').dataset.name, {{children.length}})">刪除</button>
+            </summary>
+            {{#if children.length}}
+                {{> videoTable videos=children}}
+            {{else}}
+                <p>（空群組）</p>
+            {{/if}}
+        </details>
+    {{/each}}
+    {{#if ungrouped.length}}
+        <h3>未分群</h3>
+        {{> videoTable videos=ungrouped}}
+    {{/if}}
 {{else}}
     <p>No Tg Viewed History</p>
 {{/if}}

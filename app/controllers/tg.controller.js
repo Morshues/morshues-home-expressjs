@@ -23,19 +23,37 @@ async function ensureTelegramClient(userId) {
 }
 
 
+function formatVideoNode(video) {
+  return {
+    ...video,
+    createdAt: dayjs(video.createdAt).format('YYYY-MM-DD HH:mm'),
+    lastViewedAt: dayjs(video.lastViewedAt).format('YYYY-MM-DD HH:mm')
+  }
+}
+
+function sendServiceError(res, err) {
+  if (!err.status) {
+    console.error(err)
+  }
+  res.status(err.status || 500).json({ error: err.message })
+}
+
 exports.index = async (req, res) => {
-  const history = await tgService.listVideoHistory(req.user.id)
-  const toShowHistory = history.map(record => {
-    const plain = record.get({plain: true});
-    return {
-      ...plain,
-      createdAt: dayjs(plain.createdAt).format('YYYY-MM-DD HH:mm'),
-      lastViewedAt: dayjs(plain.lastViewedAt).format('YYYY-MM-DD HH:mm')
+  const tree = await tgService.listVideoTree(req.user.id)
+  const groups = []
+  const ungrouped = []
+  for (const node of tree) {
+    if (node.type === 'group') {
+      groups.push({ ...node, children: node.children.map(formatVideoNode) })
+    } else {
+      ungrouped.push(formatVideoNode(node))
     }
-  })
+  }
   const abbrs = await TgAbbr.findAll()
   res.render('tg/index', {
-    history: toShowHistory,
+    groups,
+    ungrouped,
+    hasHistory: tree.length > 0,
     abbrs: abbrs.map(a => a.get({ plain: true })),
   })
 }
@@ -251,7 +269,7 @@ exports.connect = async (req, res) => {
       return
     }
 
-    const [ history ] = await tgService.buildVideo(req.user.id, document, tgLink)
+    const [ history ] = await tgService.buildVideo(req.user.id, document, tgLink, req.body?.groupId)
 
     res.redirect(url.format({
       pathname:'/tg/video',
@@ -267,8 +285,8 @@ exports.connect = async (req, res) => {
 
 exports.list = async (req, res) => {
   const nsfw = req.body?.nsfw
-  const list = await tgService.listVideoHistory(req.user.id, nsfw)
-  res.json(list)
+  const tree = await tgService.listVideoTree(req.user.id, nsfw)
+  res.json(tree)
 }
 
 exports.edit = async (req, res) => {
@@ -277,7 +295,7 @@ exports.edit = async (req, res) => {
     const history = await tgService.updateHistory(id, req.user.id, req.body)
     res.send(history)
   } catch (err) {
-    res.status(404).send(err.message)
+    res.status(err.status || 404).send(err.message)
   }
 }
 
@@ -313,4 +331,33 @@ exports.deleteAbbr = async (req, res) => {
   const id = req.params.id
   await TgAbbr.destroy({ where: { id } })
   res.redirect('/tg/')
+}
+
+exports.createGroup = async (req, res) => {
+  try {
+    const group = await tgService.createGroup(req.user.id, req.body?.name)
+    res.json(group)
+  } catch (err) {
+    sendServiceError(res, err)
+  }
+}
+
+exports.updateGroup = async (req, res) => {
+  try {
+    const group = await tgService.updateGroup(req.params.id, req.user.id, req.body || {})
+    res.json(group)
+  } catch (err) {
+    sendServiceError(res, err)
+  }
+}
+
+exports.deleteGroup = async (req, res) => {
+  const forceRaw = req.body?.force ?? req.query?.force
+  const force = forceRaw === true || forceRaw === 'true'
+  try {
+    const deletedVideos = await tgService.deleteGroup(req.params.id, req.user.id, force)
+    res.json({ ok: true, deletedVideos })
+  } catch (err) {
+    sendServiceError(res, err)
+  }
 }

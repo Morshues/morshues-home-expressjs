@@ -4,9 +4,9 @@ exports.index = async (req, res) => {
 }
 
 exports.upload = async (req, res) => {
-  if (!req.file) {
+  if (!req.files || req.files.length === 0) {
     return res.status(400).send('No file uploaded.');
   }
-  const name = req.file.utf8Name || req.file.originalname
-  res.send(`${name} uploaded`)
+  const names = req.files.map(f => f.utf8Name || f.originalname)
+  res.send(`${names.join(', ')} uploaded`)
 }
